@@ -1,4 +1,4 @@
-package dedup
+package slogcontext
 
 import (
 	"log/slog"
@@ -6,6 +6,7 @@ import (
 
 // groupOrAttrs holds either a group name or a list of slog.Attrs.
 // It also holds a reference/link to its parent groupOrAttrs, forming a linked list.
+// Courtesy of https://github.com/jba/slog/blob/b5eef75b08965b871bd5214891313b73d5a30432/withsupport/withsupport.go
 type groupOrAttrs struct {
 	group string        // group name if non-empty
 	attrs []slog.Attr   // attrs if non-empty
