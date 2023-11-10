@@ -11,30 +11,11 @@ type attrsKey struct{}
 
 // bucket with our different lists of attributes
 type attrsValue struct {
-	prepended []slog.Attr // list of attributes to add to the start of a log record
-	appended  []slog.Attr // list of attributes to add to the end of a log record
-}
+	// list of attributes to add to the start of a log record, oldest to newest
+	prepended []slog.Attr
 
-// prependedAttrs iterates through all prepend attributes
-func prependedAttrs(ctx context.Context, f func(slog.Attr) bool) {
-	if v, ok := ctx.Value(attrsKey{}).(attrsValue); ok {
-		for _, attr := range v.prepended {
-			if !f(attr) {
-				break
-			}
-		}
-	}
-}
-
-// appendedAttrs iterates through all append attributes
-func appendedAttrs(ctx context.Context, f func(slog.Attr) bool) {
-	if v, ok := ctx.Value(attrsKey{}).(attrsValue); ok {
-		for _, attr := range v.appended {
-			if !f(attr) {
-				break
-			}
-		}
-	}
+	// list of attributes to add to the end of a log record, oldest to newest
+	appended []slog.Attr
 }
 
 // Prepend adds the attribute arguments to the end of the group that will be
