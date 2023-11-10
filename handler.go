@@ -45,6 +45,11 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		return true
 	})
 
+	// Add our 'appended' context attributes to the end
+	if v, ok := ctx.Value(attrsKey{}).(attrsValue); ok {
+		finalAttrs = append(finalAttrs, v.appended...)
+	}
+
 	// Iterate through the goa (group Or Attributes) linked list, which is ordered from newest to oldest
 	for g := h.goa; g != nil; g = g.next {
 		if g.group != "" {
@@ -57,6 +62,11 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 			// Prepend to the front of finalAttrs, thereby making finalAttrs ordered from oldest to newest
 			finalAttrs = append(slices.Clip(g.attrs), finalAttrs...)
 		}
+	}
+
+	// Add our 'prepended' context attributes to the start
+	if v, ok := ctx.Value(attrsKey{}).(attrsValue); ok {
+		finalAttrs = append(slices.Clip(v.prepended), finalAttrs...)
 	}
 
 	// Add all attributes to new record (because old record has all the old attributes as private members)

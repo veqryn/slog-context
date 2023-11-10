@@ -6,18 +6,18 @@ import (
 	"slices"
 )
 
-// key for valueCtx
-type ctxKey struct{}
+// key for context.valueCtx
+type attrsKey struct{}
 
 // bucket with our different lists of attributes
-type ctxValue struct {
+type attrsValue struct {
 	prepended []slog.Attr // list of attributes to add to the start of a log record
 	appended  []slog.Attr // list of attributes to add to the end of a log record
 }
 
 // prependedAttrs iterates through all prepend attributes
 func prependedAttrs(ctx context.Context, f func(slog.Attr) bool) {
-	if v, ok := ctx.Value(ctxKey{}).(ctxValue); ok {
+	if v, ok := ctx.Value(attrsKey{}).(attrsValue); ok {
 		for _, attr := range v.prepended {
 			if !f(attr) {
 				break
@@ -28,7 +28,7 @@ func prependedAttrs(ctx context.Context, f func(slog.Attr) bool) {
 
 // appendedAttrs iterates through all append attributes
 func appendedAttrs(ctx context.Context, f func(slog.Attr) bool) {
-	if v, ok := ctx.Value(ctxKey{}).(ctxValue); ok {
+	if v, ok := ctx.Value(attrsKey{}).(attrsValue); ok {
 		for _, attr := range v.appended {
 			if !f(attr) {
 				break
@@ -46,13 +46,13 @@ func Prepend(parent context.Context, args ...any) context.Context {
 		parent = context.Background()
 	}
 
-	if v, ok := parent.Value(ctxKey{}).(ctxValue); ok {
+	if v, ok := parent.Value(attrsKey{}).(attrsValue); ok {
 		// by being a value, instead of pointer, v is already a shallow copy for the new context, to keep it scoped
 		v.prepended = append(slices.Clip(v.prepended), argsToAttrSlice(args)...)
-		return context.WithValue(parent, ctxKey{}, v)
+		return context.WithValue(parent, attrsKey{}, v)
 	}
 
-	return context.WithValue(parent, ctxKey{}, ctxValue{
+	return context.WithValue(parent, attrsKey{}, attrsValue{
 		prepended: argsToAttrSlice(args),
 	})
 }
@@ -66,13 +66,13 @@ func Append(parent context.Context, args ...any) context.Context {
 		parent = context.Background()
 	}
 
-	if v, ok := parent.Value(ctxKey{}).(ctxValue); ok {
+	if v, ok := parent.Value(attrsKey{}).(attrsValue); ok {
 		// by being a value, instead of pointer, v is already a shallow copy for the new context, to keep it scoped
 		v.appended = append(slices.Clip(v.appended), argsToAttrSlice(args)...)
-		return context.WithValue(parent, ctxKey{}, v)
+		return context.WithValue(parent, attrsKey{}, v)
 	}
 
-	return context.WithValue(parent, ctxKey{}, ctxValue{
+	return context.WithValue(parent, attrsKey{}, attrsValue{
 		appended: argsToAttrSlice(args),
 	})
 }
