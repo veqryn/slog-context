@@ -58,9 +58,9 @@ func Append(parent context.Context, args ...any) context.Context {
 	})
 }
 
-// This is copied from golang sdk.
 // Turn a slice of arguments, some of which pairs of primitives,
 // some might be attributes already, into a slice of attributes.
+// This is copied from golang sdk.
 func argsToAttrSlice(args []any) []slog.Attr {
 	var (
 		attr  slog.Attr
@@ -76,13 +76,13 @@ func argsToAttrSlice(args []any) []slog.Attr {
 // This is copied from golang sdk.
 const badKey = "!BADKEY"
 
-// This is copied from golang sdk.
 // argsToAttr turns a prefix of the nonempty args slice into an Attr
 // and returns the unconsumed portion of the slice.
 // If args[0] is an Attr, it returns it.
 // If args[0] is a string, it treats the first two elements as
 // a key-value pair.
 // Otherwise, it treats args[0] as a value with a missing key.
+// This is copied from golang sdk.
 func argsToAttr(args []any) (slog.Attr, []any) {
 	switch x := args[0].(type) {
 	case string:
