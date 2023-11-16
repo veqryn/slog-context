@@ -31,7 +31,9 @@ func main() {
 	ctx = slogcontext.Prepend(ctx, "prependKey", "prependValue")
 
 	// Append some slog attributes to the end of future log lines:
-	ctx = slogcontext.Append(ctx, "appendKey", "appendValue")
+	// Prepend and Append have the same args signature as slog methods,
+	// and can take a mix of slog.Attr and key-value pairs.
+	ctx = slogcontext.Append(ctx, slog.String("appendKey", "appendValue"))
 
 	// Use the logger like normal:
 	slog.WarnContext(ctx, "main message", "mainKey", "mainValue")

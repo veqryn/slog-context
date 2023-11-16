@@ -41,7 +41,9 @@ func main() {
 	// Create a group directly on the logger in the context:
 	ctx = slogcontext.WithGroup(ctx, "someGroup")
 
-	ctx = slogcontext.With(ctx, "subKey", "subValue")
+	// With and wrapper methods have the same args signature as slog methods,
+	// and can take a mix of slog.Attr and key-value pairs.
+	ctx = slogcontext.With(ctx, slog.String("subKey", "subValue"))
 
 	// Access the logger in the context directly with handy wrappers for Debug/Info/Warn/Error/Log/LogAttrs:
 	slogcontext.Info(ctx, "main message", "mainKey", "mainValue")

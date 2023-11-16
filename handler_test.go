@@ -1,7 +1,6 @@
 package slogcontext
 
 import (
-	"context"
 	"log/slog"
 	"testing"
 )
@@ -12,13 +11,13 @@ func TestHandler(t *testing.T) {
 	tester := &testHandler{}
 	h := NewHandler(tester, nil)
 
-	ctx := context.Background()
-	ctx = Prepend(ctx, "prepend1", "arg1", "prepend1", "arg2")
+	ctx := Prepend(nil, "prepend1", "arg1", slog.String("prepend1", "arg2"))
 	ctx = Prepend(ctx, "prepend2", "arg1", "prepend2", "arg2")
 	Prepend(ctx, "prepend3", "arg1", "prepend3", "arg2") // Ensure we aren't overwriting the parent context
 	ctx = Append(ctx, "append1", "arg1", "append1", "arg2")
-	ctx = Append(ctx, "append2", "arg1", "append2", "arg2")
+	ctx = Append(ctx, slog.String("append2", "arg1"), "append2", "arg2")
 	Append(ctx, "append3", "arg1", "append3", "arg2") // Ensure we aren't overwriting the parent context
+	Append(nil, "append4", "arg1", "append4", "arg2") // Ensure we aren't overwriting the parent context
 
 	l := slog.New(h)
 
