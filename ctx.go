@@ -26,8 +26,8 @@ func Logger(ctx context.Context) *slog.Logger {
 	if ctx == nil {
 		return slog.Default()
 	}
-	if log, ok := ctx.Value(ctxKey{}).(*slog.Logger); ok && log != nil {
-		return log
+	if l, ok := ctx.Value(ctxKey{}).(*slog.Logger); ok && l != nil {
+		return l
 	}
 	return slog.Default()
 }

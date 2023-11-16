@@ -16,6 +16,10 @@ import (
 // functions (because you are making use of the default package-level slog),
 // but you are passing a context.Context around.
 //
+// This can also be used when a library or vendor code you don't control is
+// using the default log methods, default logger, or doesn't accept a slog
+// Logger to all functions you wish to add attributes to.
+//
 // Attributes and key-value pairs like request-id, trace-id, user-id, etc, can
 // be added to the context, and the *slogcontext.Handler will make sure they
 // are prepended to the start, or appended to the end, of any log lines using
