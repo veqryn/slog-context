@@ -26,11 +26,14 @@ func TestCtx(t *testing.T) {
 	// Confirm Logger retrieves default if nothing stored in ctx yet
 	l := slog.New(h)
 	slog.SetDefault(l)
+	if Logger(nil) != l {
+		t.Error("Expecting default logger retrieved")
+	}
 	if Logger(context.Background()) != l {
 		t.Error("Expecting default logger retrieved")
 	}
 
-	ctx := ToCtx(context.Background(), slog.Default())
+	ctx := ToCtx(nil, slog.Default())
 
 	ctx = With(ctx, "with1", "arg1", "with1", "arg2")
 	ctx = With(ctx, "with2", "arg1", "with2", "arg2")
@@ -94,5 +97,22 @@ func TestCtx(t *testing.T) {
 	LogAttrs(ctx, slog.LevelInfo, "main message", slog.String("main1", "arg1"), slog.String("main1", "arg2"))
 	if buf.String() != expectedInfo {
 		t.Errorf("Expected:\n%s\nGot:\n%s\n", expectedInfo, buf.String())
+	}
+
+	// Test with new context/nil
+	buf.Reset()
+	Log(nil, slog.LevelWarn, "main message", "main1", "arg1", "main1", "arg2")
+	expectedWarnNil := `{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"main message","main1":"arg1","main1":"arg2"}
+`
+	if buf.String() != expectedWarnNil {
+		t.Errorf("Expected:\n%s\nGot:\n%s\n", expectedWarnNil, buf.String())
+	}
+
+	buf.Reset()
+	LogAttrs(nil, slog.LevelInfo, "main message", slog.String("main1", "arg1"), slog.String("main1", "arg2"))
+	expectedInfoNil := `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"main message","main1":"arg1","main1":"arg2"}
+`
+	if buf.String() != expectedInfoNil {
+		t.Errorf("Expected:\n%s\nGot:\n%s\n", expectedInfoNil, buf.String())
 	}
 }
