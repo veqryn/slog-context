@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+var defaultTime = time.Date(2023, 9, 29, 13, 0, 59, 0, time.UTC)
+
 type testHandler struct {
 	Ctx    context.Context
 	Record slog.Record
@@ -19,7 +21,7 @@ func (h *testHandler) Enabled(context.Context, slog.Level) bool {
 func (h *testHandler) Handle(ctx context.Context, r slog.Record) error {
 	h.Ctx = ctx
 	h.Record = r
-	h.Record.Time = time.Date(2023, 9, 29, 13, 0, 59, 0, time.UTC)
+	h.Record.Time = defaultTime
 	return nil
 }
 
