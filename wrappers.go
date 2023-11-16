@@ -9,18 +9,10 @@ import (
 
 // With calls Logger.With on the logger stored in the context,
 // or if there isn't any, on the default logger.
-// [slog.Logger.With] returns a Logger that includes the given attributes in each output
-// operation. Arguments are converted to attributes as if by Logger.Log.
-func With(ctx context.Context, args ...any) *slog.Logger {
-	return Logger(ctx).With(args...)
-}
-
-// WithCtx calls Logger.With on the logger stored in the context,
-// or if there isn't any, on the default logger.
 // This new logger is stored in a child context and the new context is returned.
 // [slog.Logger.With] returns a Logger that includes the given attributes in each output
 // operation. Arguments are converted to attributes as if by Logger.Log.
-func WithCtx(ctx context.Context, args ...any) context.Context {
+func With(ctx context.Context, args ...any) context.Context {
 	return ToCtx(ctx, Logger(ctx).With(args...))
 }
 
