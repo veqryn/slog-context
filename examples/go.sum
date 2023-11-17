@@ -11,10 +11,10 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-github.com/veqryn/slog-context v0.1.0 h1:FLuBRD/STA+7TP191gtSUOk3K+0G4BIcppqsWX7Zcfs=
-github.com/veqryn/slog-context v0.1.0/go.mod h1:2IEM+uLEBRZyq+CRMdpETc13tUj9aA7zFZnm6/YnvPQ=
 github.com/veqryn/slog-context v0.1.1-0.20231117102606-fd11a39f6c12 h1:1snFmzQyqWDmvPKNKIO1YWVpD9k9xrChNuunoaHv808=
 github.com/veqryn/slog-context v0.1.1-0.20231117102606-fd11a39f6c12/go.mod h1:2IEM+uLEBRZyq+CRMdpETc13tUj9aA7zFZnm6/YnvPQ=
+github.com/veqryn/slog-context/otel v0.0.0-20231117102930-79f3030bbca0 h1:d6vCUqNzeMgS3AL3FGb5JBoT7oJpeuj+PTQubU3FhMk=
+github.com/veqryn/slog-context/otel v0.0.0-20231117102930-79f3030bbca0/go.mod h1:YMRWOQHm7o+ecM/1fX4lCTIliHir5ftt/lkKaRKxzjg=
 go.opentelemetry.io/otel v1.21.0 h1:hzLeKBZEL7Okw2mGzZ0cc4k/A7Fta0uoPgaJCr8fsFc=
 go.opentelemetry.io/otel v1.21.0/go.mod h1:QZzNPQPm1zLX4gZK4cMi+71eaorMSGT3A4znnUvNNEo=
 go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.21.0 h1:VhlEQAPp9R1ktYfrPk5SOryw1e9LDDTZCbIPFrho0ec=
