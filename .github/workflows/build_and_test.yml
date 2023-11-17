@@ -45,6 +45,7 @@ jobs:
       - name: Test
         run: go test -v ./...
 
+  # Build and Test as a workspace, create unified test coverage file
   build-and-test:
     runs-on: ubuntu-latest
     strategy:

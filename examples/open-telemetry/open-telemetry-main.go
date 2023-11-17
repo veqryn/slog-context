@@ -22,7 +22,8 @@ func init() {
 	h := slogcontext.NewHandler(
 		slog.NewJSONHandler(os.Stdout, nil), // The next handler in the chain
 		&slogcontext.HandlerOptions{
-			// Prependers will first add the OTEL Trace ID, then anything else Prepended to the ctx
+			// Prependers will first add the OTEL Trace ID,
+			// then anything else Prepended to the ctx
 			Prependers: []slogcontext.AttrExtractor{
 				slogotel.ExtractTraceSpanID,
 				slogcontext.ExtractPrepended,
