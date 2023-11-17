@@ -33,12 +33,15 @@ jobs:
       run: |
         go mod download
         go get -t -u golang.org/x/tools/cmd/cover
+        cd otel
+        go mod download
+        cd ..
 
     - name: Build
-      run: go build -v ./...
+      run: go build -v ./... ./otel/...
 
     - name: Test
-      run: go test -v -race -coverprofile=coverage.out -covermode=atomic
+      run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./... ./otel/...
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3

@@ -8,7 +8,7 @@ import (
 )
 
 // AttrExtractor is a function that retrieves or creates slog.Attr's based
-// information found in the context.Context and the slog.Record's basic
+// information/values found in the context.Context and the slog.Record's basic
 // attributes.
 type AttrExtractor func(ctx context.Context, recordT time.Time, recordLvl slog.Level, recordMsg string) []slog.Attr
 
