@@ -12,6 +12,39 @@ on:
 
 jobs:
 
+  build-and-test-individually:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [ '1.21' ]
+        go-module: [ '.', './otel', './examples']
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.go-module }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Display Go version
+        run: go version
+
+      - name: Install dependencies
+        run: |
+          go get -t -u golang.org/x/tools/cmd/cover
+          go mod download
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Test
+        run: go test -v ./...
+
   build-and-test:
     runs-on: ubuntu-latest
     strategy:
@@ -29,44 +62,16 @@ jobs:
     - name: Display Go version
       run: go version
 
-    - name: Install dependencies
-      run: |
-        go get -t -u golang.org/x/tools/cmd/cover
-        go mod download
-        cd ./otel
-        go mod download
-        cd ../examples
-        go mod download
-        cc ..
-
-    - name: Build
-      run: |
-        go build -v ./...
-        cd ./otel
-        go build -v ./...
-        cd ../examples
-        go build -v ./...
-        cd ..
-
-    - name: Test
-      run: |
-        go test -v ./...
-        cd ./otel
-        go test -v ./...
-        cd ../examples
-        go test -v ./...
-        cd ..
-
     - name: Create workspace
       run: |
         go work init .
         go work use ./examples
         go work use ./otel
 
-    - name: Build workspace
+    - name: Build
       run: go build -v ./... ./otel/... ./examples/...
 
-    - name: Test workspace
+    - name: Test
       run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./... ./otel/... ./examples/...
 
     - name: Upload coverage reports to Codecov
