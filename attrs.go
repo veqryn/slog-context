@@ -4,19 +4,14 @@ import (
 	"context"
 	"log/slog"
 	"slices"
+	"time"
 )
 
-// key for context.valueCtx
-type attrsKey struct{}
+// Prepend key for context.valueCtx
+type prependKey struct{}
 
-// bucket with our different lists of attributes
-type attrsValue struct {
-	// list of attributes to add to the start of a log record, oldest to newest
-	prepended []slog.Attr
-
-	// list of attributes to add to the end of a log record, oldest to newest
-	appended []slog.Attr
-}
+// Append key for context.valueCtx
+type appendKey struct{}
 
 // Prepend adds the attribute arguments to the end of the group that will be
 // prepended to the start of the log record when it is handled.
@@ -27,15 +22,21 @@ func Prepend(parent context.Context, args ...any) context.Context {
 		parent = context.Background()
 	}
 
-	if v, ok := parent.Value(attrsKey{}).(attrsValue); ok {
-		// by being a value, instead of pointer, v is already a shallow copy for the new context, to keep it scoped
-		v.prepended = append(slices.Clip(v.prepended), argsToAttrSlice(args)...)
-		return context.WithValue(parent, attrsKey{}, v)
+	if v, ok := parent.Value(prependKey{}).([]slog.Attr); ok {
+		// Clip to ensure this is a scoped copy
+		return context.WithValue(parent, prependKey{}, append(slices.Clip(v), argsToAttrSlice(args)...))
 	}
+	return context.WithValue(parent, prependKey{}, argsToAttrSlice(args))
+}
 
-	return context.WithValue(parent, attrsKey{}, attrsValue{
-		prepended: argsToAttrSlice(args),
-	})
+// ExtractPrepended is an AttrExtractor that returns the prepended attributes
+// stored in the context. The returned slice should not be appended to or
+// modified in any way. Doing so will cause a race condition.
+func ExtractPrepended(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
+	if v, ok := ctx.Value(prependKey{}).([]slog.Attr); ok {
+		return v
+	}
+	return nil
 }
 
 // Append adds the attribute arguments to the end of the group that will be
@@ -47,15 +48,21 @@ func Append(parent context.Context, args ...any) context.Context {
 		parent = context.Background()
 	}
 
-	if v, ok := parent.Value(attrsKey{}).(attrsValue); ok {
-		// by being a value, instead of pointer, v is already a shallow copy for the new context, to keep it scoped
-		v.appended = append(slices.Clip(v.appended), argsToAttrSlice(args)...)
-		return context.WithValue(parent, attrsKey{}, v)
+	if v, ok := parent.Value(appendKey{}).([]slog.Attr); ok {
+		// Clip to ensure this is a scoped copy
+		return context.WithValue(parent, appendKey{}, append(slices.Clip(v), argsToAttrSlice(args)...))
 	}
+	return context.WithValue(parent, appendKey{}, argsToAttrSlice(args))
+}
 
-	return context.WithValue(parent, attrsKey{}, attrsValue{
-		appended: argsToAttrSlice(args),
-	})
+// ExtractAppended is an AttrExtractor that returns the appended attributes
+// stored in the context. The returned slice should not be appended to or
+// modified in any way. Doing so will cause a race condition.
+func ExtractAppended(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
+	if v, ok := ctx.Value(appendKey{}).([]slog.Attr); ok {
+		return v
+	}
+	return nil
 }
 
 // Turn a slice of arguments, some of which pairs of primitives,

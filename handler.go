@@ -4,28 +4,60 @@ import (
 	"context"
 	"log/slog"
 	"slices"
+	"time"
 )
 
-// HandlerOptions are options for a Handler
-type HandlerOptions struct{}
+// AttrExtractor is a function that retrieves or creates slog.Attr's based
+// information found in the context.Context and the slog.Record's basic
+// attributes.
+type AttrExtractor func(ctx context.Context, recordT time.Time, recordLvl slog.Level, recordMsg string) []slog.Attr
 
-// Handler is a slog.Handler middleware that will ...
+// HandlerOptions are options for a Handler
+type HandlerOptions struct {
+	// A list of functions to be called, each of which will return attributes
+	// that should be prepended to the start of every log line with this context.
+	// If left nil, the default ExtractPrepended function will be used only.
+	Prependers []AttrExtractor
+
+	// A list of functions to be called, each of which will return attributes
+	// that should be appended to the end of every log line with this context.
+	// If left nil, the default ExtractAppended function will be used only.
+	Appenders []AttrExtractor
+}
+
+// Handler is a slog.Handler middleware that will Prepend and
+// Append attributes to log lines. The attributes are extracted out of the log
+// record's context by the provided AttrExtractor methods.
+// It passes the final record and attributes off to the next handler when finished.
 type Handler struct {
-	next slog.Handler
-	goa  *groupOrAttrs
+	next       slog.Handler
+	goa        *groupOrAttrs
+	prependers []AttrExtractor
+	appenders  []AttrExtractor
 }
 
 var _ slog.Handler = &Handler{} // Assert conformance with interface
 
-// NewHandler creates a Handler slog.Handler middleware that will ...
+// NewHandler creates a Handler slog.Handler middleware that will Prepend and
+// Append attributes to log lines. The attributes are extracted out of the log
+// record's context by the provided AttrExtractor methods.
+// It passes the final record and attributes off to the next handler when finished.
 // If opts is nil, the default options are used.
 func NewHandler(next slog.Handler, opts *HandlerOptions) *Handler {
 	if opts == nil {
 		opts = &HandlerOptions{}
 	}
+	if opts.Prependers == nil {
+		opts.Prependers = []AttrExtractor{ExtractPrepended}
+	}
+	if opts.Appenders == nil {
+		opts.Appenders = []AttrExtractor{ExtractAppended}
+	}
 
 	return &Handler{
-		next: next,
+		next:       next,
+		prependers: slices.Clone(opts.Prependers),
+		appenders:  slices.Clone(opts.Appenders),
 	}
 }
 
@@ -46,8 +78,8 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	})
 
 	// Add our 'appended' context attributes to the end
-	if v, ok := ctx.Value(attrsKey{}).(attrsValue); ok {
-		finalAttrs = append(finalAttrs, v.appended...)
+	for _, f := range h.appenders {
+		finalAttrs = append(finalAttrs, f(ctx, r.Time, r.Level, r.Message)...)
 	}
 
 	// Iterate through the goa (group Or Attributes) linked list, which is ordered from newest to oldest
@@ -64,9 +96,10 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		}
 	}
 
-	// Add our 'prepended' context attributes to the start
-	if v, ok := ctx.Value(attrsKey{}).(attrsValue); ok {
-		finalAttrs = append(slices.Clip(v.prepended), finalAttrs...)
+	// Add our 'prepended' context attributes to the start.
+	// Go in reverse order, since each is prepending to the front.
+	for i := len(h.prependers) - 1; i >= 0; i-- {
+		finalAttrs = append(slices.Clip(h.prependers[i](ctx, r.Time, r.Level, r.Message)), finalAttrs...)
 	}
 
 	// Add all attributes to new record (because old record has all the old attributes as private members)
@@ -77,7 +110,7 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		PC:      r.PC,
 	}
 
-	// Add deduplicated attributes back in
+	// Add attributes back in
 	newR.AddAttrs(finalAttrs...)
 	return h.next.Handle(ctx, *newR)
 }

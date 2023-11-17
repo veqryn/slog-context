@@ -5,7 +5,7 @@ import (
 	"log/slog"
 )
 
-// key for context.valueCtx
+// Logger key for context.valueCtx
 type ctxKey struct{}
 
 // ToCtx returns a copy of ctx with the logger attached.
