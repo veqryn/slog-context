@@ -3,10 +3,9 @@ package slogcontext
 import (
 	"context"
 	"log/slog"
-)
 
-// Logger key for context.valueCtx
-type ctxKey struct{}
+	"github.com/veqryn/slog-context/internal"
+)
 
 // ToCtx returns a copy of ctx with the logger attached.
 // The parent context will be unaffected.
@@ -16,7 +15,7 @@ func ToCtx(parent context.Context, logger *slog.Logger) context.Context {
 	if parent == nil {
 		parent = context.Background()
 	}
-	return context.WithValue(parent, ctxKey{}, logger)
+	return context.WithValue(parent, internal.CtxKey{}, internal.LoggerCtxVal{Logger: logger})
 }
 
 // Logger returns the slog.Logger associated with the ctx.
@@ -26,8 +25,8 @@ func Logger(ctx context.Context) *slog.Logger {
 	if ctx == nil {
 		return slog.Default()
 	}
-	if l, ok := ctx.Value(ctxKey{}).(*slog.Logger); ok && l != nil {
-		return l
+	if l, ok := ctx.Value(internal.CtxKey{}).(internal.LoggerCtxVal); ok && l.Logger != nil {
+		return l.Logger
 	}
 	return slog.Default()
 }
