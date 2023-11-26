@@ -53,28 +53,34 @@ func TestHandlerMultipleAttrExtractor(t *testing.T) {
 	t.Parallel()
 
 	tester := &testHandler{}
-	h := NewHandler(tester, &HandlerOptions{
-		Prependers: []AttrExtractor{ExtractPrepended, func(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
-			if v, ok := ctx.Value(prependKey{}).([]slog.Attr); ok {
-				v = slices.Clone(v)
-				for i := 0; i < len(v); i++ {
-					v[i].Key += "^"
+	h := NewMiddleware(&HandlerOptions{
+		Prependers: []AttrExtractor{
+			ExtractPrepended,
+			func(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
+				if v, ok := ctx.Value(prependKey{}).([]slog.Attr); ok {
+					v = slices.Clone(v)
+					for i := 0; i < len(v); i++ {
+						v[i].Key += "^"
+					}
+					return v
 				}
-				return v
-			}
-			return nil
-		}},
-		Appenders: []AttrExtractor{ExtractAppended, func(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
-			if v, ok := ctx.Value(appendKey{}).([]slog.Attr); ok {
-				v = slices.Clone(v)
-				for i := 0; i < len(v); i++ {
-					v[i].Key += "*"
+				return nil
+			},
+		},
+		Appenders: []AttrExtractor{
+			ExtractAppended,
+			func(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
+				if v, ok := ctx.Value(appendKey{}).([]slog.Attr); ok {
+					v = slices.Clone(v)
+					for i := 0; i < len(v); i++ {
+						v[i].Key += "*"
+					}
+					return v
 				}
-				return v
-			}
-			return nil
-		}},
-	})
+				return nil
+			},
+		},
+	})(tester)
 
 	ctx := Prepend(nil, "prepend1", "arg1", slog.String("prepend1", "arg2"))
 	ctx = Prepend(ctx, "prepend2", "arg1", "prepend2", "arg2")

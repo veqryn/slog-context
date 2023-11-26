@@ -38,6 +38,24 @@ type Handler struct {
 
 var _ slog.Handler = &Handler{} // Assert conformance with interface
 
+// NewMiddleware creates a slogcontext.Handler slog.Handler middleware
+// that conforms to [github.com/samber/slog-multi.Middleware] interface.
+// It can be used with slogmulti methods such as Pipe to easily setup a pipeline of slog handlers:
+//
+//	slog.SetDefault(slog.New(slogmulti.
+//		Pipe(slogcontext.NewMiddleware(&slogcontext.HandlerOptions{})).
+//		Pipe(slogdedup.NewOverwriteMiddleware(&slogdedup.OverwriteHandlerOptions{})).
+//		Handler(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{})),
+//	))
+func NewMiddleware(options *HandlerOptions) func(slog.Handler) slog.Handler {
+	return func(next slog.Handler) slog.Handler {
+		return NewHandler(
+			next,
+			options,
+		)
+	}
+}
+
 // NewHandler creates a Handler slog.Handler middleware that will Prepend and
 // Append attributes to log lines. The attributes are extracted out of the log
 // record's context by the provided AttrExtractor methods.
