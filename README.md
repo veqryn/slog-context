@@ -405,3 +405,14 @@ func newTraceProvider(exp sdktrace.SpanExporter) *sdktrace.TracerProvider {
 	)
 }
 ```
+
+### slog-multi Middleware
+This library has a convenience method that allow it to interoperate with [github.com/samber/slog-multi](https://github.com/samber/slog-multi),
+in order to easily setup slog workflows such as pipelines, fanout, routing, failover, etc.
+```go
+slog.SetDefault(slog.New(slogmulti.
+	Pipe(slogcontext.NewMiddleware(&slogcontext.HandlerOptions{})).
+	Pipe(slogdedup.NewOverwriteMiddleware(&slogdedup.OverwriteHandlerOptions{})).
+	Handler(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{})),
+))
+```
