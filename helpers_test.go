@@ -12,6 +12,7 @@ var defaultTime = time.Date(2023, 9, 29, 13, 0, 59, 0, time.UTC)
 type testHandler struct {
 	Ctx    context.Context
 	Record slog.Record
+	source bool
 }
 
 func (h *testHandler) Enabled(context.Context, slog.Level) bool {
@@ -35,7 +36,7 @@ func (h *testHandler) WithAttrs([]slog.Attr) slog.Handler {
 
 func (h *testHandler) String() string {
 	buf := &bytes.Buffer{}
-	err := slog.NewTextHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug}).Handle(context.Background(), h.Record)
+	err := slog.NewTextHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: h.source}).Handle(context.Background(), h.Record)
 	if err != nil {
 		panic(err)
 	}
@@ -44,7 +45,7 @@ func (h *testHandler) String() string {
 
 func (h *testHandler) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
-	err := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug}).Handle(context.Background(), h.Record)
+	err := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: h.source}).Handle(context.Background(), h.Record)
 	if err != nil {
 		return nil, err
 	}

@@ -16,7 +16,7 @@ Automatically read any custom context values, such as OpenTelemetry TraceID.
 This library supports two different workflows for using slog and context.
 These workflows can be used individually or together at the same time.
 
-##### Attributes Extracted from Context Workflow:
+#### Attributes Extracted from Context Workflow:
 
 Using the `slogcontext.Handler` lets us `Prepend` and `Append` attributes to
 log lines, even when a logger is not passed into a function or in code we don't
@@ -31,12 +31,22 @@ prepended or appended to all log lines using that context. For example, the
 (OpenTelemetry) TraceID and SpanID, and add them to the log record, while also
 annotating the Span with an error code if the log is at error level.
 
-##### Logger in Context Workflow:
+#### Logger in Context Workflow:
 
 Using `ToCtx` and `Logger` lets us store the logger itself within a context,
 and get it back out again. Wrapper methods `With`/`WithGroup`/`Debug`/`Info`/
 `Warn`/`Error`/`Log`/`LogAttrs` let us work directly with a logger residing
 with the context (or the default logger if no logger is stored in the context).
+
+#### Compatibility with both Slog and Logr
+slog-context is compatible with both standard library [slog](https://pkg.go.dev/log/slog)
+and with [logr](https://github.com/go-logr/logr), which is an alternative
+logging api/interface/frontend.
+
+If only slog is used, only `*slog.Logger`'s will be stored in the context.
+If both slog and logr are used, `*slog.Logger` will be automatically converted
+to a `logr.Logger` as needed, and vice versa. This allows full interoperability
+down the stack and with any libraries that use either slog-context or logr.
 
 ## Install
 `go get github.com/veqryn/slog-context`
