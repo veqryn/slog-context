@@ -2,11 +2,21 @@ package slogcontext
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 )
+
+type logLine struct {
+	Source struct {
+		Function string `json:"function"`
+		File     string `json:"file"`
+		Line     int    `json:"line"`
+	} `json:"source"`
+}
 
 func TestHandler(t *testing.T) {
 	t.Parallel()
@@ -46,6 +56,25 @@ func TestHandler(t *testing.T) {
 `
 	if string(b) != expectedJSON {
 		t.Errorf("Expected:\n%s\nGot:\n%s\n", expectedText, string(b))
+	}
+
+	// Check the source location fields
+	tester.source = true
+	b, err = tester.MarshalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var unmarshalled logLine
+	err = json.Unmarshal(b, &unmarshalled)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if unmarshalled.Source.Function != "github.com/veqryn/slog-context.TestHandler" ||
+		!strings.HasSuffix(unmarshalled.Source.File, "github.com/veqryn/slog-context/handler_test.go") ||
+		unmarshalled.Source.Line != 42 {
+		t.Errorf("Expected source fields are incorrect: %#+v\n", unmarshalled)
 	}
 }
 
