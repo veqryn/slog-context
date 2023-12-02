@@ -1,0 +1,6 @@
+run:
+  tests: false
+
+linters:
+  disable:
+    - errcheck

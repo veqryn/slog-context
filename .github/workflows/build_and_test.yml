@@ -7,6 +7,7 @@ on:
   push:
     tags:
     branches:
+      - main
   pull_request:
     branches:
 
@@ -27,25 +28,25 @@ jobs:
         working-directory: ${{ matrix.go-module }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Set up Go ${{ matrix.go-version }}
+      - name: Set up Go ${{ matrix.go-version }} ${{ matrix.go-module }}
         uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
 
-      - name: Display Go version
+      - name: Display Go version ${{ matrix.go-version }} ${{ matrix.go-module }}
         run: go version
 
-      - name: Install dependencies
+      - name: Install dependencies ${{ matrix.go-version }} ${{ matrix.go-module }}
         run: |
           go get -t -u golang.org/x/tools/cmd/cover
           go mod download
 
-      - name: Build
+      - name: Build ${{ matrix.go-version }} ${{ matrix.go-module }}
         run: go build -v ./...
 
-      - name: Test
+      - name: Test ${{ matrix.go-version }} ${{ matrix.go-module }}
         run: go test -v ./...
 
   # Build and Test as a workspace, create unified test coverage file
@@ -56,29 +57,29 @@ jobs:
         go-version: [ '1.21' ]
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Set up Go ${{ matrix.go-version }}
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ matrix.go-version }}
+      - name: Set up Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
 
-    - name: Display Go version
-      run: go version
+      - name: Display Go version
+        run: go version
 
-    - name: Create workspace
-      run: |
-        go work init .
-        go work use ./examples
-        go work use ./otel
+      - name: Create workspace
+        run: |
+          go work init .
+          go work use ./examples
+          go work use ./otel
 
-    - name: Build
-      run: go build -v ./... ./otel/... ./examples/...
+      - name: Build
+        run: go build -v ./... ./otel/... ./examples/...
 
-    - name: Test
-      run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./... ./otel/... ./examples/...
+      - name: Test
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./... ./otel/... ./examples/...
 
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v3
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
