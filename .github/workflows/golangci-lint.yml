@@ -14,13 +14,21 @@ jobs:
   golangci:
     name: lint
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-module: [ '.', './otel', './examples']
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.go-module }}
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
         with:
           go-version: 'stable'
           cache: false
-      - name: golangci-lint root
+      - name: Github-action golangci-lint ${{ matrix.go-module }}
         uses: golangci/golangci-lint-action@v3
         with:
           # Require: The version of golangci-lint to use.
@@ -52,15 +60,6 @@ jobs:
 
           # Optional: The mode to install golangci-lint. It can be 'binary' or 'goinstall'.
           # install-mode: "goinstall"
-      - name: golangci-lint otel
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: latest
-          working-directory: ./otel
-          only-new-issues: true
-      - name: golangci-lint examples
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: latest
-          working-directory: ./examples
-          only-new-issues: true
+
+      - name: Manual golangci-lint ${{ matrix.go-module }}
+        run: golangci-lint run ./...

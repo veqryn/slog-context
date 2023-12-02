@@ -72,7 +72,7 @@ func TestHandler(t *testing.T) {
 	}
 
 	if unmarshalled.Source.Function != "github.com/veqryn/slog-context.TestHandler" ||
-		!strings.HasSuffix(unmarshalled.Source.File, "github.com/veqryn/slog-context/handler_test.go") ||
+		!strings.HasSuffix(unmarshalled.Source.File, "slog-context/handler_test.go") ||
 		unmarshalled.Source.Line != 42 {
 		t.Errorf("Expected source fields are incorrect: %#+v\n", unmarshalled)
 	}
