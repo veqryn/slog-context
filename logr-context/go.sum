@@ -1,4 +1,0 @@
-github.com/go-logr/logr v1.3.0 h1:2y3SDp0ZXuc6/cjLSZ+Q3ir+QB9T/iG5yYRXqsagWSY=
-github.com/go-logr/logr v1.3.0/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
-github.com/veqryn/slog-context v0.3.1-0.20231126110827-74878698ea2b h1:BG6I67Hp571eSmcc3s8O0XAxSAUg3WHSiWPoMzeV91E=
-github.com/veqryn/slog-context v0.3.1-0.20231126110827-74878698ea2b/go.mod h1:2IEM+uLEBRZyq+CRMdpETc13tUj9aA7zFZnm6/YnvPQ=
