@@ -64,22 +64,27 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
-      - name: Display Go version
+      - name: Display Go version ${{ matrix.go-version }}
         run: go version
 
-      - name: Create workspace
+      - name: Create workspace ${{ matrix.go-version }}
         run: |
           go work init .
           go work use ./examples
           go work use ./otel
 
-      - name: Build
+      - name: Install dependencies ${{ matrix.go-version }}
+        run: |
+          go get -t -u golang.org/x/tools/cmd/cover
+          go mod download
+
+      - name: Build ${{ matrix.go-version }}
         run: go build -v ./... ./otel/... ./examples/...
 
-      - name: Test
+      - name: Test ${{ matrix.go-version }}
         run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./... ./otel/... ./examples/...
 
-      - name: Upload coverage reports to Codecov
+      - name: Upload coverage reports to Codecov ${{ matrix.go-version }}
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
