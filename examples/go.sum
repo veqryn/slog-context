@@ -13,8 +13,8 @@ github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcU
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/veqryn/slog-context v0.5.0 h1:HDDJI0OOin9SGJ6iZvRBDa0Ts2U2QRhUdKWFE9FQKq0=
 github.com/veqryn/slog-context v0.5.0/go.mod h1:E+qpdyiQs2YKRxFnX1JjpdFE1z3Ka94Kem2q9ZG6Jjo=
-github.com/veqryn/slog-context/otel v0.3.1-0.20240103074521-0aea7a966d3b h1:6QVm8Ie9cf38JCKZrSSPcWMjJRHc0BgI7AkZEs3vZqs=
-github.com/veqryn/slog-context/otel v0.3.1-0.20240103074521-0aea7a966d3b/go.mod h1:p1u/B26KGqax6uAm/rtuMuZccVRvwtK9ZuzouY2OgjI=
+github.com/veqryn/slog-context/otel v0.5.0 h1:oDYhKqeiM4WDOLMOGcgnCMPJsgfZxKa77W2ul46b1bo=
+github.com/veqryn/slog-context/otel v0.5.0/go.mod h1:/DGNkElX28T8BgfuBjL0j4mr0lKL/g1SwNC4DZIrToI=
 go.opentelemetry.io/otel v1.21.0 h1:hzLeKBZEL7Okw2mGzZ0cc4k/A7Fta0uoPgaJCr8fsFc=
 go.opentelemetry.io/otel v1.21.0/go.mod h1:QZzNPQPm1zLX4gZK4cMi+71eaorMSGT3A4znnUvNNEo=
 go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.21.0 h1:VhlEQAPp9R1ktYfrPk5SOryw1e9LDDTZCbIPFrho0ec=
