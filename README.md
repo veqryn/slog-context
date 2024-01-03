@@ -18,7 +18,7 @@ These workflows can be used individually or together at the same time.
 
 #### Attributes Extracted from Context Workflow:
 
-Using the `slogcontext.Handler` lets us `Prepend` and `Append` attributes to
+Using the `Handler` lets us `Prepend` and `Append` attributes to
 log lines, even when a logger is not passed into a function or in code we don't
 control. This is done without storing the logger in the context; instead the
 attributes are stored in the context and the Handler picks them up later
@@ -33,7 +33,7 @@ annotating the Span with an error code if the log is at error level.
 
 #### Logger in Context Workflow:
 
-Using `ToCtx` and `Logger` lets us store the logger itself within a context,
+Using `NewCtx` and `FromCtx` lets us store the logger itself within a context,
 and get it back out again. Wrapper methods `With`/`WithGroup`/`Debug`/`Info`/
 `Warn`/`Error`/`Log`/`LogAttrs` let us work directly with a logger residing
 with the context (or the default logger if no logger is stored in the context).
@@ -53,7 +53,7 @@ down the stack and with any libraries that use either slog-context or logr.
 
 ```go
 import (
-	slogcontext "github.com/veqryn/slog-context"
+	slogctx "github.com/veqryn/slog-context"
 )
 ```
 
@@ -67,7 +67,7 @@ import (
 	"log/slog"
 	"os"
 
-	slogcontext "github.com/veqryn/slog-context"
+	slogctx "github.com/veqryn/slog-context"
 )
 
 // This workflow has us pass the *slog.Logger around inside a context.Context.
@@ -91,24 +91,31 @@ func main() {
 	slog.SetDefault(slog.New(h))
 
 	// Store the logger inside the context:
-	ctx := slogcontext.ToCtx(context.Background(), slog.Default())
+	ctx := slogctx.NewCtx(context.Background(), slog.Default())
 
 	// Get the logger back out again at any time, for manual usage:
-	log := slogcontext.Logger(ctx)
+	log := slogctx.FromCtx(ctx)
 	log.Warn("warning")
+	/*
+		{
+			"time":"2023-11-14T00:53:46.361201-07:00",
+			"level":"INFO",
+			"msg":"warning"
+		}
+	*/
 
 	// Add attributes directly to the logger in the context:
-	ctx = slogcontext.With(ctx, "rootKey", "rootValue")
+	ctx = slogctx.With(ctx, "rootKey", "rootValue")
 
 	// Create a group directly on the logger in the context:
-	ctx = slogcontext.WithGroup(ctx, "someGroup")
+	ctx = slogctx.WithGroup(ctx, "someGroup")
 
 	// With and wrapper methods have the same args signature as slog methods,
 	// and can take a mix of slog.Attr and key-value pairs.
-	ctx = slogcontext.With(ctx, slog.String("subKey", "subValue"))
+	ctx = slogctx.With(ctx, slog.String("subKey", "subValue"), slog.Bool("someBool", true))
 
 	// Access the logger in the context directly with handy wrappers for Debug/Info/Warn/Error/Log/LogAttrs:
-	slogcontext.Info(ctx, "main message", "mainKey", "mainValue")
+	slogctx.Info(ctx, "main message", "mainKey", "mainValue")
 	/*
 		{
 			"time":"2023-11-14T00:53:46.363072-07:00",
@@ -117,6 +124,7 @@ func main() {
 			"rootKey":"rootValue",
 			"someGroup":{
 				"subKey":"subValue",
+				"someBool":true,
 				"mainKey":"mainValue"
 			}
 		}
@@ -135,7 +143,7 @@ import (
 	"log/slog"
 	"os"
 
-	slogcontext "github.com/veqryn/slog-context"
+	slogctx "github.com/veqryn/slog-context"
 )
 
 // This workflow lets us use slog as normal, while adding the ability to put
@@ -151,23 +159,23 @@ import (
 // Logger to all functions you wish to add attributes to.
 //
 // Attributes and key-value pairs like request-id, trace-id, user-id, etc, can
-// be added to the context, and the *slogcontext.Handler will make sure they
+// be added to the context, and the *slogctx.Handler will make sure they
 // are prepended to the start, or appended to the end, of any log lines using
 // that context.
 func main() {
-	// Create the *slogcontext.Handler middleware
-	h := slogcontext.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
+	// Create the *slogctx.Handler middleware
+	h := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 	slog.SetDefault(slog.New(h))
 
 	ctx := context.Background()
 
 	// Prepend some slog attributes to the start of future log lines:
-	ctx = slogcontext.Prepend(ctx, "prependKey", "prependValue")
+	ctx = slogctx.Prepend(ctx, "prependKey", "prependValue")
 
 	// Append some slog attributes to the end of future log lines:
 	// Prepend and Append have the same args signature as slog methods,
 	// and can take a mix of slog.Attr and key-value pairs.
-	ctx = slogcontext.Append(ctx, slog.String("appendKey", "appendValue"))
+	ctx = slogctx.Append(ctx, slog.String("appendKey", "appendValue"))
 
 	// Use the logger like normal:
 	slog.WarnContext(ctx, "main message", "mainKey", "mainValue")
@@ -216,7 +224,7 @@ import (
 	"os"
 	"time"
 
-	slogcontext "github.com/veqryn/slog-context"
+	slogctx "github.com/veqryn/slog-context"
 )
 
 type ctxKey struct{}
@@ -232,18 +240,18 @@ func customExtractor(ctx context.Context, _ time.Time, _ slog.Level, _ string) [
 // custom values we want from any context, and having them added to the start
 // or end of the log record.
 func main() {
-	// Create the *slogcontext.Handler middleware
-	h := slogcontext.NewHandler(
+	// Create the *slogctx.Handler middleware
+	h := slogctx.NewHandler(
 		slog.NewJSONHandler(os.Stdout, nil), // The next handler in the chain
-		&slogcontext.HandlerOptions{
+		&slogctx.HandlerOptions{
 			// Prependers stays as default (leaving as nil would accomplish the same)
-			Prependers: []slogcontext.AttrExtractor{
-				slogcontext.ExtractPrepended,
+			Prependers: []slogctx.AttrExtractor{
+				slogctx.ExtractPrepended,
 			},
-			// Appenders first appends anything added with slogcontext.Append,
+			// Appenders first appends anything added with slogctx.Append,
 			// then appends our custom ctx value
-			Appenders: []slogcontext.AttrExtractor{
-				slogcontext.ExtractAppended,
+			Appenders: []slogctx.AttrExtractor{
+				slogctx.ExtractAppended,
 				customExtractor,
 			},
 		},
@@ -283,7 +291,7 @@ import (
 	"os"
 	"time"
 
-	slogcontext "github.com/veqryn/slog-context"
+	slogctx "github.com/veqryn/slog-context"
 	slogotel "github.com/veqryn/slog-context/otel"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
@@ -294,19 +302,19 @@ import (
 )
 
 func init() {
-	// Create the *slogcontext.Handler middleware
-	h := slogcontext.NewHandler(
+	// Create the *slogctx.Handler middleware
+	h := slogctx.NewHandler(
 		slog.NewJSONHandler(os.Stdout, nil), // The next handler in the chain
-		&slogcontext.HandlerOptions{
+		&slogctx.HandlerOptions{
 			// Prependers will first add the OTEL Trace ID,
 			// then anything else Prepended to the ctx
-			Prependers: []slogcontext.AttrExtractor{
+			Prependers: []slogctx.AttrExtractor{
 				slogotel.ExtractTraceSpanID,
-				slogcontext.ExtractPrepended,
+				slogctx.ExtractPrepended,
 			},
 			// Appenders stays as default (leaving as nil would accomplish the same)
-			Appenders: []slogcontext.AttrExtractor{
-				slogcontext.ExtractAppended,
+			Appenders: []slogctx.AttrExtractor{
+				slogctx.ExtractAppended,
 			},
 		},
 	)
@@ -334,7 +342,7 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, span := tracer.Start(r.Context(), "helloHandler")
 	defer span.End()
 
-	slogcontext.Info(ctx, "starting long calculation...")
+	slogctx.Info(ctx, "starting long calculation...")
 	/*
 		{
 			"time": "2023-11-17T03:11:20.584592-07:00",
@@ -346,7 +354,7 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	*/
 
 	time.Sleep(5 * time.Second)
-	slogcontext.Error(ctx, "something failed...")
+	slogctx.Error(ctx, "something failed...")
 	/*
 		{
 			"time": "2023-11-17T03:11:25.586464-07:00",
@@ -358,7 +366,8 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	*/
 
 	w.WriteHeader(http.StatusInternalServerError)
-	// The OTEL exporter will output the trace, which will include this and much more:
+
+	// The OTEL exporter will soon after output the trace, which will include this and much more:
 	/*
 		{
 			"Name": "helloHandler",
@@ -421,8 +430,26 @@ This library has a convenience method that allow it to interoperate with [github
 in order to easily setup slog workflows such as pipelines, fanout, routing, failover, etc.
 ```go
 slog.SetDefault(slog.New(slogmulti.
-	Pipe(slogcontext.NewMiddleware(&slogcontext.HandlerOptions{})).
+	Pipe(slogctx.NewMiddleware(&slogctx.HandlerOptions{})).
 	Pipe(slogdedup.NewOverwriteMiddleware(&slogdedup.OverwriteHandlerOptions{})).
 	Handler(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{})),
 ))
 ```
+
+## Breaking Changes
+### O.4.0 -> 0.5.0
+Package function `ToCtx` renamed to `NewCtx`.
+Package function `Logger` renamed to `FromCtx`.
+
+Package renamed from `slogcontext` to `slogctx`.
+To fix, change this:
+```go
+import "github.com/veqryn/slog-context"
+var h = slogcontext.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
+```
+To this:
+```go
+import "github.com/veqryn/slog-context"
+var h = slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
+```
+Named imports are unaffected.

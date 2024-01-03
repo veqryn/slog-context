@@ -1,4 +1,4 @@
-package slogcontext
+package slogctx
 
 import (
 	"context"
@@ -38,12 +38,12 @@ type Handler struct {
 
 var _ slog.Handler = &Handler{} // Assert conformance with interface
 
-// NewMiddleware creates a slogcontext.Handler slog.Handler middleware
+// NewMiddleware creates a slogctx.Handler slog.Handler middleware
 // that conforms to [github.com/samber/slog-multi.Middleware] interface.
 // It can be used with slogmulti methods such as Pipe to easily setup a pipeline of slog handlers:
 //
 //	slog.SetDefault(slog.New(slogmulti.
-//		Pipe(slogcontext.NewMiddleware(&slogcontext.HandlerOptions{})).
+//		Pipe(slogctx.NewMiddleware(&slogctx.HandlerOptions{})).
 //		Pipe(slogdedup.NewOverwriteMiddleware(&slogdedup.OverwriteHandlerOptions{})).
 //		Handler(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{})),
 //	))

@@ -1,11 +1,11 @@
-package slogcontext_test
+package slogctx_test
 
 import (
 	"context"
 	"log/slog"
 	"os"
 
-	slogcontext "github.com/veqryn/slog-context"
+	slogctx "github.com/veqryn/slog-context"
 )
 
 func ExampleNewHandler() {
@@ -22,23 +22,23 @@ func ExampleNewHandler() {
 	// Logger to all functions you wish to add attributes to.
 	//
 	// Attributes and key-value pairs like request-id, trace-id, user-id, etc, can
-	// be added to the context, and the *slogcontext.Handler will make sure they
+	// be added to the context, and the *slogctx.Handler will make sure they
 	// are prepended to the start, or appended to the end, of any log lines using
 	// that context.
 
-	// Create the *slogcontext.Handler middleware
-	h := slogcontext.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
+	// Create the *slogctx.Handler middleware
+	h := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 	slog.SetDefault(slog.New(h))
 
 	ctx := context.Background()
 
 	// Prepend some slog attributes to the start of future log lines:
-	ctx = slogcontext.Prepend(ctx, "prependKey", "prependValue")
+	ctx = slogctx.Prepend(ctx, "prependKey", "prependValue")
 
 	// Append some slog attributes to the end of future log lines:
 	// Prepend and Append have the same args signature as slog methods,
 	// and can take a mix of slog.Attr and key-value pairs.
-	ctx = slogcontext.Append(ctx, slog.String("appendKey", "appendValue"))
+	ctx = slogctx.Append(ctx, slog.String("appendKey", "appendValue"))
 
 	// Use the logger like normal:
 	slog.WarnContext(ctx, "main message", "mainKey", "mainValue")
@@ -76,7 +76,7 @@ func ExampleNewHandler() {
 	*/
 }
 
-func ExampleToCtx() {
+func ExampleNewCtx() {
 	// This workflow has us pass the *slog.Logger around inside a context.Context.
 	// This lets us add attributes and groups to the logger, while naturally
 	// keeping the logger scoped just like the context itself is scoped.
@@ -98,24 +98,24 @@ func ExampleToCtx() {
 	slog.SetDefault(slog.New(h))
 
 	// Store the logger inside the context:
-	ctx := slogcontext.ToCtx(context.Background(), slog.Default())
+	ctx := slogctx.NewCtx(context.Background(), slog.Default())
 
 	// Get the logger back out again at any time, for manual usage:
-	log := slogcontext.Logger(ctx)
+	log := slogctx.FromCtx(ctx)
 	log.Warn("warning")
 
 	// Add attributes directly to the logger in the context:
-	ctx = slogcontext.With(ctx, "rootKey", "rootValue")
+	ctx = slogctx.With(ctx, "rootKey", "rootValue")
 
 	// Create a group directly on the logger in the context:
-	ctx = slogcontext.WithGroup(ctx, "someGroup")
+	ctx = slogctx.WithGroup(ctx, "someGroup")
 
 	// With and wrapper methods have the same args signature as slog methods,
 	// and can take a mix of slog.Attr and key-value pairs.
-	ctx = slogcontext.With(ctx, slog.String("subKey", "subValue"))
+	ctx = slogctx.With(ctx, slog.String("subKey", "subValue"))
 
 	// Access the logger in the context directly with handy wrappers for Debug/Info/Warn/Error/Log/LogAttrs:
-	slogcontext.Info(ctx, "main message", "mainKey", "mainValue")
+	slogctx.Info(ctx, "main message", "mainKey", "mainValue")
 	/*
 		{
 			"time":"2023-11-14T00:53:46.363072-07:00",

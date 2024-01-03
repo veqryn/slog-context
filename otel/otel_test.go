@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"testing"
 
-	slogcontext "github.com/veqryn/slog-context"
+	slogctx "github.com/veqryn/slog-context"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -16,12 +16,12 @@ func TestExtractTraceSpanID(t *testing.T) {
 	t.Parallel()
 
 	tester := &testHandler{}
-	h := slogcontext.NewHandler(
+	h := slogctx.NewHandler(
 		tester,
-		&slogcontext.HandlerOptions{
-			Prependers: []slogcontext.AttrExtractor{
+		&slogctx.HandlerOptions{
+			Prependers: []slogctx.AttrExtractor{
 				ExtractTraceSpanID,
-				slogcontext.ExtractPrepended,
+				slogctx.ExtractPrepended,
 			},
 		})
 	slog.SetDefault(slog.New(h))
@@ -46,13 +46,13 @@ func TestExtractTraceSpanID(t *testing.T) {
 
 	ctx := trace.ContextWithSpan(context.Background(), span)
 
-	ctx = slogcontext.Prepend(ctx, "prepend1", "arg1", "prepend1", "arg2")
-	ctx = slogcontext.Append(ctx, "append1", "arg1", "append1", "arg2")
+	ctx = slogctx.Prepend(ctx, "prepend1", "arg1", "prepend1", "arg2")
+	ctx = slogctx.Append(ctx, "append1", "arg1", "append1", "arg2")
 
-	ctx = slogcontext.With(ctx, "with1", "arg1", "with1", "arg2")
-	ctx = slogcontext.WithGroup(ctx, "group1")
+	ctx = slogctx.With(ctx, "with1", "arg1", "with1", "arg2")
+	ctx = slogctx.WithGroup(ctx, "group1")
 
-	slogcontext.Error(ctx, "main message", "main1", "arg1", "main1", "arg2")
+	slogctx.Error(ctx, "main message", "main1", "arg1", "main1", "arg2")
 
 	expectedText := `time=2023-09-29T13:00:59.000Z level=ERROR msg="main message" TraceID=0123456789abcdef0123456789abcdef SpanID=0123456789abcdef prepend1=arg1 prepend1=arg2 with1=arg1 with1=arg2 group1.main1=arg1 group1.main1=arg2 group1.append1=arg1 group1.append1=arg2
 `

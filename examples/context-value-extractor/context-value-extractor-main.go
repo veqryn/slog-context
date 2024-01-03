@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	slogcontext "github.com/veqryn/slog-context"
+	slogctx "github.com/veqryn/slog-context"
 )
 
 type ctxKey struct{}
@@ -22,18 +22,18 @@ func customExtractor(ctx context.Context, _ time.Time, _ slog.Level, _ string) [
 // custom values we want from any context, and having them added to the start
 // or end of the log record.
 func main() {
-	// Create the *slogcontext.Handler middleware
-	h := slogcontext.NewHandler(
+	// Create the *slogctx.Handler middleware
+	h := slogctx.NewHandler(
 		slog.NewJSONHandler(os.Stdout, nil), // The next handler in the chain
-		&slogcontext.HandlerOptions{
+		&slogctx.HandlerOptions{
 			// Prependers stays as default (leaving as nil would accomplish the same)
-			Prependers: []slogcontext.AttrExtractor{
-				slogcontext.ExtractPrepended,
+			Prependers: []slogctx.AttrExtractor{
+				slogctx.ExtractPrepended,
 			},
-			// Appenders first appends anything added with slogcontext.Append,
+			// Appenders first appends anything added with slogctx.Append,
 			// then appends our custom ctx value
-			Appenders: []slogcontext.AttrExtractor{
-				slogcontext.ExtractAppended,
+			Appenders: []slogctx.AttrExtractor{
+				slogctx.ExtractAppended,
 				customExtractor,
 			},
 		},

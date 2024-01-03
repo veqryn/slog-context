@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	slogcontext "github.com/veqryn/slog-context"
+	slogctx "github.com/veqryn/slog-context"
 	slogotel "github.com/veqryn/slog-context/otel"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
@@ -18,19 +18,19 @@ import (
 )
 
 func init() {
-	// Create the *slogcontext.Handler middleware
-	h := slogcontext.NewHandler(
+	// Create the *slogctx.Handler middleware
+	h := slogctx.NewHandler(
 		slog.NewJSONHandler(os.Stdout, nil), // The next handler in the chain
-		&slogcontext.HandlerOptions{
+		&slogctx.HandlerOptions{
 			// Prependers will first add the OTEL Trace ID,
 			// then anything else Prepended to the ctx
-			Prependers: []slogcontext.AttrExtractor{
+			Prependers: []slogctx.AttrExtractor{
 				slogotel.ExtractTraceSpanID,
-				slogcontext.ExtractPrepended,
+				slogctx.ExtractPrepended,
 			},
 			// Appenders stays as default (leaving as nil would accomplish the same)
-			Appenders: []slogcontext.AttrExtractor{
-				slogcontext.ExtractAppended,
+			Appenders: []slogctx.AttrExtractor{
+				slogctx.ExtractAppended,
 			},
 		},
 	)
@@ -58,7 +58,7 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, span := tracer.Start(r.Context(), "helloHandler")
 	defer span.End()
 
-	slogcontext.Info(ctx, "starting long calculation...")
+	slogctx.Info(ctx, "starting long calculation...")
 	/*
 		{
 			"time": "2023-11-17T03:11:20.584592-07:00",
@@ -70,7 +70,7 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	*/
 
 	time.Sleep(5 * time.Second)
-	slogcontext.Error(ctx, "something failed...")
+	slogctx.Error(ctx, "something failed...")
 	/*
 		{
 			"time": "2023-11-17T03:11:25.586464-07:00",
@@ -82,7 +82,8 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	*/
 
 	w.WriteHeader(http.StatusInternalServerError)
-	// The OTEL exporter will output the trace, which will include this and much more:
+
+	// The OTEL exporter will soon after output the trace, which will include this and much more:
 	/*
 		{
 			"Name": "helloHandler",

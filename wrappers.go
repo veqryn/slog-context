@@ -1,4 +1,4 @@
-package slogcontext
+package slogctx
 
 import (
 	"context"
@@ -7,16 +7,16 @@ import (
 	"time"
 )
 
-// With calls Logger.With on the logger stored in the context,
+// With calls With on the logger stored in the context,
 // or if there isn't any, on the default logger.
 // This new logger is stored in a child context and the new context is returned.
 // [slog.Logger.With] returns a Logger that includes the given attributes in each output
-// operation. Arguments are converted to attributes as if by Logger.Log.
+// operation. Arguments are converted to attributes as if by [slog.Logger.Log].
 func With(ctx context.Context, args ...any) context.Context {
-	return ToCtx(ctx, Logger(ctx).With(args...))
+	return NewCtx(ctx, FromCtx(ctx).With(args...))
 }
 
-// WithGroup calls Logger.WithGroup on the logger stored in the context,
+// WithGroup calls WithGroup on the logger stored in the context,
 // or if there isn't any, on the default logger.
 // This new logger is stored in a child context and the new context is returned.
 // [slog.Logger.WithGroup] returns a Logger that starts a group, if name is non-empty.
@@ -26,38 +26,38 @@ func With(ctx context.Context, args ...any) context.Context {
 //
 // If name is empty, WithGroup returns the receiver.
 func WithGroup(ctx context.Context, name string) context.Context {
-	return ToCtx(ctx, Logger(ctx).WithGroup(name))
+	return NewCtx(ctx, FromCtx(ctx).WithGroup(name))
 }
 
-// Debug calls Logger.DebugContext on the logger stored in the context,
+// Debug calls DebugContext on the logger stored in the context,
 // or if there isn't any, on the default logger.
 // [slog.Logger.DebugContext] logs at LevelDebug with the given context.
 func Debug(ctx context.Context, msg string, args ...any) {
-	log(ctx, Logger(ctx), slog.LevelDebug, msg, args...)
+	log(ctx, FromCtx(ctx), slog.LevelDebug, msg, args...)
 }
 
-// Info calls Logger.InfoContext on the logger stored in the context,
+// Info calls InfoContext on the logger stored in the context,
 // or if there isn't any, on the default logger.
 // [slog.Logger.InfoContext] logs at LevelInfo with the given context.
 func Info(ctx context.Context, msg string, args ...any) {
-	log(ctx, Logger(ctx), slog.LevelInfo, msg, args...)
+	log(ctx, FromCtx(ctx), slog.LevelInfo, msg, args...)
 }
 
-// Warn calls Logger.WarnContext on the logger stored in the context,
+// Warn calls WarnContext on the logger stored in the context,
 // or if there isn't any, on the default logger.
 // [slog.Logger.WarnContext] logs at LevelWarn with the given context.
 func Warn(ctx context.Context, msg string, args ...any) {
-	log(ctx, Logger(ctx), slog.LevelWarn, msg, args...)
+	log(ctx, FromCtx(ctx), slog.LevelWarn, msg, args...)
 }
 
-// Error calls Logger.ErrorContext on the logger stored in the context,
+// Error calls ErrorContext on the logger stored in the context,
 // or if there isn't any, on the default logger.
 // [slog.Logger.ErrorContext] logs at LevelError with the given context.
 func Error(ctx context.Context, msg string, args ...any) {
-	log(ctx, Logger(ctx), slog.LevelError, msg, args...)
+	log(ctx, FromCtx(ctx), slog.LevelError, msg, args...)
 }
 
-// Log calls Logger.Log on the logger stored in the context,
+// Log calls Log on the logger stored in the context,
 // or if there isn't any, on the default logger.
 // [slog.Logger.Log] emits a log record with the current time and the given level and message.
 // The Record's Attrs consist of the Logger's attributes followed by
@@ -70,14 +70,14 @@ func Error(ctx context.Context, msg string, args ...any) {
 //     into an Attr.
 //   - Otherwise, the argument is treated as a value with key "!BADKEY".
 func Log(ctx context.Context, level slog.Level, msg string, args ...any) {
-	log(ctx, Logger(ctx), level, msg, args...)
+	log(ctx, FromCtx(ctx), level, msg, args...)
 }
 
-// LogAttrs calls Logger.LogAttrs on the logger stored in the context,
+// LogAttrs calls LogAttrs on the logger stored in the context,
 // or if there isn't any, on the default logger.
 // [slog.Logger.LogAttrs] is a more efficient version of [slog.Logger.Log] that accepts only Attrs.
 func LogAttrs(ctx context.Context, level slog.Level, msg string, attrs ...slog.Attr) {
-	logAttrs(ctx, Logger(ctx), level, msg, attrs...)
+	logAttrs(ctx, FromCtx(ctx), level, msg, attrs...)
 }
 
 // log is the low-level logging method for methods that take ...any.

@@ -1,4 +1,4 @@
-package slogcontext
+package slogctx
 
 import (
 	"context"
@@ -7,9 +7,9 @@ import (
 	"github.com/go-logr/logr"
 )
 
-// ToCtx returns a copy of ctx with the logger attached.
+// NewCtx returns a copy of ctx with the logger attached.
 // The parent context will be unaffected.
-func ToCtx(parent context.Context, logger *slog.Logger) context.Context {
+func NewCtx(parent context.Context, logger *slog.Logger) context.Context {
 	if parent == nil {
 		parent = context.Background()
 	}
@@ -17,10 +17,11 @@ func ToCtx(parent context.Context, logger *slog.Logger) context.Context {
 	return logr.NewContextWithSlogLogger(parent, logger)
 }
 
-// Logger returns the slog.Logger associated with the ctx.
+// FromCtx returns the slog.FromCtx associated with the ctx.
 // If no logger is associated, or the logger or ctx are nil,
 // slog.Default() is returned.
-func Logger(ctx context.Context) *slog.Logger {
+// This function will convert a logr.Logger to a *slog.Logger only if necessary.
+func FromCtx(ctx context.Context) *slog.Logger {
 	if ctx == nil {
 		return slog.Default()
 	}

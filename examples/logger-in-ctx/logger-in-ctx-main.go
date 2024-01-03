@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os"
 
-	slogcontext "github.com/veqryn/slog-context"
+	slogctx "github.com/veqryn/slog-context"
 )
 
 // This workflow has us pass the *slog.Logger around inside a context.Context.
@@ -29,24 +29,31 @@ func main() {
 	slog.SetDefault(slog.New(h))
 
 	// Store the logger inside the context:
-	ctx := slogcontext.ToCtx(context.Background(), slog.Default())
+	ctx := slogctx.NewCtx(context.Background(), slog.Default())
 
 	// Get the logger back out again at any time, for manual usage:
-	log := slogcontext.Logger(ctx)
+	log := slogctx.FromCtx(ctx)
 	log.Warn("warning")
+	/*
+		{
+			"time":"2023-11-14T00:53:46.361201-07:00",
+			"level":"INFO",
+			"msg":"warning"
+		}
+	*/
 
 	// Add attributes directly to the logger in the context:
-	ctx = slogcontext.With(ctx, "rootKey", "rootValue")
+	ctx = slogctx.With(ctx, "rootKey", "rootValue")
 
 	// Create a group directly on the logger in the context:
-	ctx = slogcontext.WithGroup(ctx, "someGroup")
+	ctx = slogctx.WithGroup(ctx, "someGroup")
 
 	// With and wrapper methods have the same args signature as slog methods,
 	// and can take a mix of slog.Attr and key-value pairs.
-	ctx = slogcontext.With(ctx, slog.String("subKey", "subValue"))
+	ctx = slogctx.With(ctx, slog.String("subKey", "subValue"), slog.Bool("someBool", true))
 
 	// Access the logger in the context directly with handy wrappers for Debug/Info/Warn/Error/Log/LogAttrs:
-	slogcontext.Info(ctx, "main message", "mainKey", "mainValue")
+	slogctx.Info(ctx, "main message", "mainKey", "mainValue")
 	/*
 		{
 			"time":"2023-11-14T00:53:46.363072-07:00",
@@ -55,6 +62,7 @@ func main() {
 			"rootKey":"rootValue",
 			"someGroup":{
 				"subKey":"subValue",
+				"someBool":true,
 				"mainKey":"mainValue"
 			}
 		}
