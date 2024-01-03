@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"os"
 
-	slogcontext "github.com/veqryn/slog-context"
+	slogctx "github.com/veqryn/slog-context"
 )
 
 // This workflow lets us use slog as normal, while adding the ability to put
@@ -21,23 +21,23 @@ import (
 // Logger to all functions you wish to add attributes to.
 //
 // Attributes and key-value pairs like request-id, trace-id, user-id, etc, can
-// be added to the context, and the *slogcontext.Handler will make sure they
+// be added to the context, and the *slogctx.Handler will make sure they
 // are prepended to the start, or appended to the end, of any log lines using
 // that context.
 func main() {
-	// Create the *slogcontext.Handler middleware
-	h := slogcontext.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
+	// Create the *slogctx.Handler middleware
+	h := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 	slog.SetDefault(slog.New(h))
 
 	ctx := context.Background()
 
 	// Prepend some slog attributes to the start of future log lines:
-	ctx = slogcontext.Prepend(ctx, "prependKey", "prependValue")
+	ctx = slogctx.Prepend(ctx, "prependKey", "prependValue")
 
 	// Append some slog attributes to the end of future log lines:
 	// Prepend and Append have the same args signature as slog methods,
 	// and can take a mix of slog.Attr and key-value pairs.
-	ctx = slogcontext.Append(ctx, slog.String("appendKey", "appendValue"))
+	ctx = slogctx.Append(ctx, slog.String("appendKey", "appendValue"))
 
 	// Use the logger like normal:
 	slog.WarnContext(ctx, "main message", "mainKey", "mainValue")

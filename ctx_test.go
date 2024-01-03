@@ -1,4 +1,4 @@
-package slogcontext
+package slogctx
 
 import (
 	"bytes"
@@ -23,17 +23,17 @@ func TestCtx(t *testing.T) {
 		},
 	})
 
-	// Confirm Logger retrieves default if nothing stored in ctx yet
+	// Confirm FromCtx retrieves default if nothing stored in ctx yet
 	l := slog.New(h)
 	slog.SetDefault(l)
-	if Logger(nil) != l {
+	if FromCtx(nil) != l {
 		t.Error("Expecting default logger retrieved")
 	}
-	if Logger(context.Background()) != l {
+	if FromCtx(context.Background()) != l {
 		t.Error("Expecting default logger retrieved")
 	}
 
-	ctx := ToCtx(nil, slog.Default())
+	ctx := NewCtx(nil, slog.Default())
 
 	ctx = With(ctx, "with1", "arg1", "with1", "arg2")
 	ctx = With(ctx, "with2", "arg1", "with2", "arg2")
@@ -48,7 +48,7 @@ func TestCtx(t *testing.T) {
 	With(ctx, "with6", "arg1", "with6", "arg2") // Ensure we aren't overwriting the parent context
 
 	// Test with getting logger back out
-	l = Logger(ctx)
+	l = FromCtx(ctx)
 	l.InfoContext(ctx, "main message", "main1", "arg1", "main1", "arg2")
 	expectedInfo := `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"main message","with1":"arg1","with1":"arg2","with2":"arg1","with2":"arg2","group1":{"with4":"arg1","with4":"arg2","with5":"arg1","with5":"arg2","main1":"arg1","main1":"arg2"}}
 `

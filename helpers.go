@@ -1,4 +1,4 @@
-package slogcontext
+package slogctx
 
 import (
 	"log/slog"
