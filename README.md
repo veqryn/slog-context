@@ -49,7 +49,10 @@ to a `logr.Logger` as needed, and vice versa. This allows full interoperability
 down the stack and with any libraries that use either slog-context or logr.
 
 ## Install
-`go get github.com/veqryn/slog-context`
+
+```
+go get github.com/veqryn/slog-context
+```
 
 ```go
 import (
