@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.21' ]
+        go-version: [ '1.21', '1.22' ]
         go-module: [ '.', './otel', './examples']
 
     defaults:
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.21' ]
+        go-version: [ '1.21', '1.22' ]
 
     steps:
       - uses: actions/checkout@v4
