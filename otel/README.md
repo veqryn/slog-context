@@ -3,7 +3,7 @@
 ![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.21-%23007d9c)
 [![GoDoc](https://godoc.org/github.com/veqryn/slog-context?status.svg)](https://pkg.go.dev/github.com/veqryn/slog-context/otel)
 ![Build Status](https://github.com/veqryn/slog-context/actions/workflows/build_and_test.yml/badge.svg)
-[![Go report](https://goreportcard.com/badge/github.com/veqryn/slog-context)](https://goreportcard.com/report/github.com/veqryn/slog-context/otel)
+[![Go report](https://goreportcard.com/badge/github.com/veqryn/slog-context/otel)](https://goreportcard.com/report/github.com/veqryn/slog-context/otel)
 [![Coverage](https://img.shields.io/codecov/c/github/veqryn/slog-context)](https://codecov.io/gh/veqryn/slog-context)
 [![Contributors](https://img.shields.io/github/contributors/veqryn/slog-context)](https://github.com/veqryn/slog-context/graphs/contributors)
 [![License](https://img.shields.io/github/license/veqryn/slog-context)](../LICENSE)
@@ -18,6 +18,12 @@ done without storing the logger in the context; instead the Handler picks them
 up later whenever a new log line is written, even if it is written in a library
 or code you don't control. `ExtractTraceSpanID` will also annotate the Span with
 an error code if the log is at error level.
+
+### Other Great SLOG Utilities
+- [slogctx](https://github.com/veqryn/slog-context): Add attributes to context and have them automatically added to all log lines. Work with a logger stored in context.
+- [slogotel](https://github.com/veqryn/slog-context/tree/main/otel): Automatically extract and add [OpenTelemetry](https://opentelemetry.io/) TraceID's to all log lines.
+- [slogdedup](https://github.com/veqryn/slog-dedup): Middleware that deduplicates and sorts attributes. Particularly useful for JSON logging.
+- [slogbugsnag](https://github.com/veqryn/slog-bugsnag): Middleware that pipes Errors to [Bugsnag](https://www.bugsnag.com/).
 
 ## Install
 ```
