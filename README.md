@@ -48,6 +48,12 @@ If both slog and logr are used, `*slog.Logger` will be automatically converted
 to a `logr.Logger` as needed, and vice versa. This allows full interoperability
 down the stack and with any libraries that use either slog-context or logr.
 
+### Other Great SLOG Utilities
+- [slogctx](https://github.com/veqryn/slog-context): Add attributes to context and have them automatically added to all log lines. Work with a logger stored in context.
+- [slogotel](https://github.com/veqryn/slog-context/tree/main/otel): Automatically extract and add [OpenTelemetry](https://opentelemetry.io/) TraceID's to all log lines.
+- [slogdedup](https://github.com/veqryn/slog-dedup): Middleware that deduplicates and sorts attributes. Particularly useful for JSON logging.
+- [slogbugsnag](https://github.com/veqryn/slog-bugsnag): Middleware that pipes Errors to [Bugsnag](https://www.bugsnag.com/).
+
 ## Install
 
 ```
