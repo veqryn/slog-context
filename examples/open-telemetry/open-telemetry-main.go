@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -42,6 +42,8 @@ func init() {
 func main() {
 	// Handle OTEL shutdown properly so nothing leaks
 	defer traceProvider.Shutdown(context.Background())
+
+	slog.Info("Starting server. Please run: curl localhost:8080/hello")
 
 	// Demonstrate the slogotel.ExtractTraceSpanID with a http server
 	http.HandleFunc("/hello", helloHandler)
