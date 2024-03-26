@@ -11,8 +11,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-github.com/veqryn/slog-context v0.5.1 h1:t+7YLQX6xLlnZ1bg6qeM3fsQMK4hPEt6WBC372OSYuk=
-github.com/veqryn/slog-context v0.5.1/go.mod h1:E+qpdyiQs2YKRxFnX1JjpdFE1z3Ka94Kem2q9ZG6Jjo=
+github.com/veqryn/slog-context v0.6.0 h1:RV0DL6SIXwTjKu5hUfZlreitiQ47HG6BA7G/aQINK9A=
+github.com/veqryn/slog-context v0.6.0/go.mod h1:E+qpdyiQs2YKRxFnX1JjpdFE1z3Ka94Kem2q9ZG6Jjo=
 github.com/veqryn/slog-context/otel v0.5.1 h1:X/UmUK+YJHTun7TVwSfOTAkfbhlpPCr7W6WjfHDF3qw=
 github.com/veqryn/slog-context/otel v0.5.1/go.mod h1:C+F2oB2BnozIuBHw7cvenou3fpDJqfOvMvKNA7RS5jA=
 go.opentelemetry.io/otel v1.24.0 h1:0LAOdjNmQeSTzGBzduGe/rU4tZhMwL5rWgtp9Ku5Jfo=
