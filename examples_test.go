@@ -2,6 +2,7 @@ package slogctx_test
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 
@@ -56,7 +57,7 @@ func ExampleNewHandler() {
 	// Use the logger like normal; add attributes, create groups, pass it around:
 	log := slog.With("rootKey", "rootValue")
 	log = log.WithGroup("someGroup")
-	log = log.With("subKey", "subValue8")
+	log = log.With("subKey", "subValue")
 
 	// The prepended/appended attributes end up in all log lines that use that context
 	log.InfoContext(ctx, "main message", "mainKey", "mainValue")
@@ -94,7 +95,7 @@ func ExampleNewCtx() {
 	// logger and its attributes will propagate with it, adding these to any log
 	// lines using that context.
 
-	h := slog.NewJSONHandler(os.Stdout, nil)
+	h := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 	slog.SetDefault(slog.New(h))
 
 	// Store the logger inside the context:
@@ -103,6 +104,13 @@ func ExampleNewCtx() {
 	// Get the logger back out again at any time, for manual usage:
 	log := slogctx.FromCtx(ctx)
 	log.Warn("warning")
+	/*
+		{
+			"time":"2023-11-14T00:53:46.361201-07:00",
+			"level":"INFO",
+			"msg":"warning"
+		}
+	*/
 
 	// Add attributes directly to the logger in the context:
 	ctx = slogctx.With(ctx, "rootKey", "rootValue")
@@ -112,18 +120,24 @@ func ExampleNewCtx() {
 
 	// With and wrapper methods have the same args signature as slog methods,
 	// and can take a mix of slog.Attr and key-value pairs.
-	ctx = slogctx.With(ctx, slog.String("subKey", "subValue"))
+	ctx = slogctx.With(ctx, slog.String("subKey", "subValue"), slog.Bool("someBool", true))
+
+	err := errors.New("an error")
 
 	// Access the logger in the context directly with handy wrappers for Debug/Info/Warn/Error/Log/LogAttrs:
-	slogctx.Info(ctx, "main message", "mainKey", "mainValue")
+	slogctx.Error(ctx, "main message",
+		slogctx.Err(err),
+		slog.String("mainKey", "mainValue"))
 	/*
 		{
 			"time":"2023-11-14T00:53:46.363072-07:00",
-			"level":"INFO",
+			"level":"ERROR",
 			"msg":"main message",
 			"rootKey":"rootValue",
 			"someGroup":{
 				"subKey":"subValue",
+				"someBool":true,
+				"err":"an error",
 				"mainKey":"mainValue"
 			}
 		}

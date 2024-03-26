@@ -51,8 +51,9 @@ down the stack and with any libraries that use either slog-context or logr.
 ### Other Great SLOG Utilities
 - [slogctx](https://github.com/veqryn/slog-context): Add attributes to context and have them automatically added to all log lines. Work with a logger stored in context.
 - [slogotel](https://github.com/veqryn/slog-context/tree/main/otel): Automatically extract and add [OpenTelemetry](https://opentelemetry.io/) TraceID's to all log lines.
-- [slogdedup](https://github.com/veqryn/slog-dedup): Middleware that deduplicates and sorts attributes. Particularly useful for JSON logging.
+- [slogdedup](https://github.com/veqryn/slog-dedup): Middleware that deduplicates and sorts attributes. Particularly useful for JSON logging. Format logs for aggregators (Graylog, GCP/Stackdriver, etc).
 - [slogbugsnag](https://github.com/veqryn/slog-bugsnag): Middleware that pipes Errors to [Bugsnag](https://www.bugsnag.com/).
+- [slogjson](https://github.com/veqryn/slog-json): Formatter that uses the [JSON v2](https://github.com/golang/go/discussions/63397) [library](https://github.com/go-json-experiment/json), with optional single-line pretty-printing.
 
 ## Install
 
@@ -73,6 +74,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 
@@ -96,7 +98,7 @@ import (
 // logger and its attributes will propagate with it, adding these to any log
 // lines using that context.
 func main() {
-	h := slog.NewJSONHandler(os.Stdout, nil)
+	h := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 	slog.SetDefault(slog.New(h))
 
 	// Store the logger inside the context:
@@ -123,17 +125,22 @@ func main() {
 	// and can take a mix of slog.Attr and key-value pairs.
 	ctx = slogctx.With(ctx, slog.String("subKey", "subValue"), slog.Bool("someBool", true))
 
+	err := errors.New("an error")
+
 	// Access the logger in the context directly with handy wrappers for Debug/Info/Warn/Error/Log/LogAttrs:
-	slogctx.Info(ctx, "main message", "mainKey", "mainValue")
+	slogctx.Error(ctx, "main message",
+		slogctx.Err(err),
+		slog.String("mainKey", "mainValue"))
 	/*
 		{
 			"time":"2023-11-14T00:53:46.363072-07:00",
-			"level":"INFO",
+			"level":"ERROR",
 			"msg":"main message",
 			"rootKey":"rootValue",
 			"someGroup":{
 				"subKey":"subValue",
 				"someBool":true,
+				"err":"an error",
 				"mainKey":"mainValue"
 			}
 		}
