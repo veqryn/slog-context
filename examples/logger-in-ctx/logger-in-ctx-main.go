@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 
@@ -25,7 +26,7 @@ import (
 // logger and its attributes will propagate with it, adding these to any log
 // lines using that context.
 func main() {
-	h := slog.NewJSONHandler(os.Stdout, nil)
+	h := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 	slog.SetDefault(slog.New(h))
 
 	// Store the logger inside the context:
@@ -52,17 +53,22 @@ func main() {
 	// and can take a mix of slog.Attr and key-value pairs.
 	ctx = slogctx.With(ctx, slog.String("subKey", "subValue"), slog.Bool("someBool", true))
 
+	err := errors.New("an error")
+
 	// Access the logger in the context directly with handy wrappers for Debug/Info/Warn/Error/Log/LogAttrs:
-	slogctx.Info(ctx, "main message", "mainKey", "mainValue")
+	slogctx.Error(ctx, "main message",
+		slogctx.Err(err),
+		slog.String("mainKey", "mainValue"))
 	/*
 		{
 			"time":"2023-11-14T00:53:46.363072-07:00",
-			"level":"INFO",
+			"level":"ERROR",
 			"msg":"main message",
 			"rootKey":"rootValue",
 			"someGroup":{
 				"subKey":"subValue",
 				"someBool":true,
+				"err":"an error",
 				"mainKey":"mainValue"
 			}
 		}

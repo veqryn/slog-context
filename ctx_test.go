@@ -3,6 +3,7 @@ package slogctx
 import (
 	"bytes"
 	"context"
+	"errors"
 	"log/slog"
 	"testing"
 )
@@ -80,8 +81,8 @@ func TestCtx(t *testing.T) {
 	}
 
 	buf.Reset()
-	Error(ctx, "main message", "main1", "arg1", "main1", "arg2")
-	expectedError := `{"time":"2023-09-29T13:00:59Z","level":"ERROR","msg":"main message","with1":"arg1","with1":"arg2","with2":"arg1","with2":"arg2","group1":{"with4":"arg1","with4":"arg2","with5":"arg1","with5":"arg2","main1":"arg1","main1":"arg2"}}
+	Error(ctx, "main message", "main1", "arg1", "main1", "arg2", Err(errors.New("an error")))
+	expectedError := `{"time":"2023-09-29T13:00:59Z","level":"ERROR","msg":"main message","with1":"arg1","with1":"arg2","with2":"arg1","with2":"arg2","group1":{"with4":"arg1","with4":"arg2","with5":"arg1","with5":"arg2","main1":"arg1","main1":"arg2","err":"an error"}}
 `
 	if buf.String() != expectedError {
 		t.Errorf("Expected:\n%s\nGot:\n%s\n", expectedError, buf.String())

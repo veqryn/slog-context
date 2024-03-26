@@ -7,6 +7,16 @@ import (
 	"time"
 )
 
+// ErrKey is the key used by handlers for an error
+// when the log method is called. The associated Value is an error.
+const ErrKey = "err" // TODO: consider making a var to allow changes before.
+
+// Err is a convenience method that creates a [slog.Attr] out of an error.
+// It uses a consistent key: [ErrKey]
+func Err(err error) slog.Attr {
+	return slog.Any(ErrKey, err)
+}
+
 // With calls With on the logger stored in the context,
 // or if there isn't any, on the default logger.
 // This new logger is stored in a child context and the new context is returned.
