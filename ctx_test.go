@@ -6,6 +6,8 @@ import (
 	"errors"
 	"log/slog"
 	"testing"
+
+	"github.com/veqryn/slog-context/internal/test"
 )
 
 func TestCtx(t *testing.T) {
@@ -18,7 +20,7 @@ func TestCtx(t *testing.T) {
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			// fmt.Printf("ReplaceAttr: key:%s valueKind:%s value:%s nilGroups:%t groups:%#+v\n", a.Key, a.Value.Kind().String(), a.Value.String(), groups == nil, groups)
 			if groups == nil && a.Key == slog.TimeKey {
-				return slog.Time(slog.TimeKey, defaultTime)
+				return slog.Time(slog.TimeKey, test.DefaultTime)
 			}
 			return a
 		},

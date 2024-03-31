@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/veqryn/slog-context/internal/test"
 )
 
 type logLine struct {
@@ -21,7 +23,7 @@ type logLine struct {
 func TestHandler(t *testing.T) {
 	t.Parallel()
 
-	tester := &testHandler{}
+	tester := &test.TestHandler{}
 	h := NewHandler(tester, nil)
 
 	ctx := Prepend(nil, "prepend1", "arg1", slog.String("prepend1", "arg2"))
@@ -59,7 +61,7 @@ func TestHandler(t *testing.T) {
 	}
 
 	// Check the source location fields
-	tester.source = true
+	tester.Source = true
 	b, err = tester.MarshalJSON()
 	if err != nil {
 		t.Fatal(err)
@@ -73,7 +75,7 @@ func TestHandler(t *testing.T) {
 
 	if unmarshalled.Source.Function != "github.com/veqryn/slog-context.TestHandler" ||
 		!strings.HasSuffix(unmarshalled.Source.File, "slog-context/handler_test.go") ||
-		unmarshalled.Source.Line != 42 {
+		unmarshalled.Source.Line != 44 {
 		t.Errorf("Expected source fields are incorrect: %#+v\n", unmarshalled)
 	}
 }
@@ -81,7 +83,7 @@ func TestHandler(t *testing.T) {
 func TestHandlerMultipleAttrExtractor(t *testing.T) {
 	t.Parallel()
 
-	tester := &testHandler{}
+	tester := &test.TestHandler{}
 	h := NewMiddleware(&HandlerOptions{
 		Prependers: []AttrExtractor{
 			ExtractPrepended,
