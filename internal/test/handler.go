@@ -1,3 +1,4 @@
+// Package test provides useful test helpers that can be used in multiple packages.
 package test
 
 import (
@@ -7,47 +8,61 @@ import (
 	"time"
 )
 
+// DefaultTime is a single point in time to use for log lines
 var DefaultTime = time.Date(2023, 9, 29, 13, 0, 59, 0, time.UTC)
 
-type TestHandler struct {
-	Ctx    context.Context
-	Record slog.Record
-	Source bool
+// Handler is a slog.Handler that records the records that come its way
+type Handler struct {
+	Records []slog.Record
+	Ctxs    []context.Context
+	Source  bool
 }
 
-func (h *TestHandler) Enabled(context.Context, slog.Level) bool {
+// Enabled returns true
+func (h *Handler) Enabled(context.Context, slog.Level) bool {
 	return true
 }
 
-func (h *TestHandler) Handle(ctx context.Context, r slog.Record) error {
-	h.Ctx = ctx
-	h.Record = r
-	h.Record.Time = DefaultTime
+// Handle records a log record
+func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
+	r.Time = DefaultTime
+	h.Records = append(h.Records, r)
+	h.Ctxs = append(h.Ctxs, ctx)
 	return nil
 }
 
-func (h *TestHandler) WithGroup(string) slog.Handler {
+// WithGroup panics
+func (h *Handler) WithGroup(string) slog.Handler {
 	panic("shouldn't be called")
 }
 
-func (h *TestHandler) WithAttrs([]slog.Attr) slog.Handler {
+// WithAttrs panics
+func (h *Handler) WithAttrs([]slog.Attr) slog.Handler {
 	panic("shouldn't be called")
 }
 
-func (h *TestHandler) String() string {
+// String formats all log records with slog.TextHandler
+func (h *Handler) String() string {
 	buf := &bytes.Buffer{}
-	err := slog.NewTextHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: h.Source}).Handle(context.Background(), h.Record)
-	if err != nil {
-		panic(err)
+	formatter := slog.NewTextHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: h.Source})
+	for _, record := range h.Records {
+		err := formatter.Handle(context.Background(), record)
+		if err != nil {
+			panic(err)
+		}
 	}
 	return buf.String()
 }
 
-func (h *TestHandler) MarshalJSON() ([]byte, error) {
+// MarshalJSON formats all log records with slog.JSONHandler
+func (h *Handler) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
-	err := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: h.Source}).Handle(context.Background(), h.Record)
-	if err != nil {
-		return nil, err
+	formatter := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: h.Source})
+	for _, record := range h.Records {
+		err := formatter.Handle(context.Background(), record)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return buf.Bytes(), nil
 }

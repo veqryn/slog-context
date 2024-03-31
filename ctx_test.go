@@ -11,8 +11,6 @@ import (
 )
 
 func TestCtx(t *testing.T) {
-	t.Parallel()
-
 	buf := &bytes.Buffer{}
 	h := slog.NewJSONHandler(buf, &slog.HandlerOptions{
 		AddSource: false,
@@ -28,7 +26,7 @@ func TestCtx(t *testing.T) {
 
 	// Confirm FromCtx retrieves default if nothing stored in ctx yet
 	l := slog.New(h)
-	slog.SetDefault(l)
+	slog.SetDefault(l) // Can cause issues in tests run in parallel, so don't use it in other tests, just this test
 	if FromCtx(nil) != l {
 		t.Error("Expecting default logger retrieved")
 	}

@@ -23,7 +23,7 @@ type logLine struct {
 func TestHandler(t *testing.T) {
 	t.Parallel()
 
-	tester := &test.TestHandler{}
+	tester := &test.Handler{}
 	h := NewHandler(tester, nil)
 
 	ctx := Prepend(nil, "prepend1", "arg1", slog.String("prepend1", "arg2"))
@@ -83,7 +83,7 @@ func TestHandler(t *testing.T) {
 func TestHandlerMultipleAttrExtractor(t *testing.T) {
 	t.Parallel()
 
-	tester := &test.TestHandler{}
+	tester := &test.Handler{}
 	h := NewMiddleware(&HandlerOptions{
 		Prependers: []AttrExtractor{
 			ExtractPrepended,
