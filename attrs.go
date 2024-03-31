@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"slices"
 	"time"
+
+	"github.com/veqryn/slog-context/internal/attr"
 )
 
 // Prepend key for context.valueCtx
@@ -24,9 +26,9 @@ func Prepend(parent context.Context, args ...any) context.Context {
 
 	if v, ok := parent.Value(prependKey{}).([]slog.Attr); ok {
 		// Clip to ensure this is a scoped copy
-		return context.WithValue(parent, prependKey{}, append(slices.Clip(v), argsToAttrSlice(args)...))
+		return context.WithValue(parent, prependKey{}, append(slices.Clip(v), attr.ArgsToAttrSlice(args)...))
 	}
-	return context.WithValue(parent, prependKey{}, argsToAttrSlice(args))
+	return context.WithValue(parent, prependKey{}, attr.ArgsToAttrSlice(args))
 }
 
 // ExtractPrepended is an AttrExtractor that returns the prepended attributes
@@ -50,9 +52,9 @@ func Append(parent context.Context, args ...any) context.Context {
 
 	if v, ok := parent.Value(appendKey{}).([]slog.Attr); ok {
 		// Clip to ensure this is a scoped copy
-		return context.WithValue(parent, appendKey{}, append(slices.Clip(v), argsToAttrSlice(args)...))
+		return context.WithValue(parent, appendKey{}, append(slices.Clip(v), attr.ArgsToAttrSlice(args)...))
 	}
-	return context.WithValue(parent, appendKey{}, argsToAttrSlice(args))
+	return context.WithValue(parent, appendKey{}, attr.ArgsToAttrSlice(args))
 }
 
 // ExtractAppended is an AttrExtractor that returns the appended attributes
@@ -63,45 +65,4 @@ func ExtractAppended(ctx context.Context, _ time.Time, _ slog.Level, _ string) [
 		return v
 	}
 	return nil
-}
-
-// Turn a slice of arguments, some of which pairs of primitives,
-// some might be attributes already, into a slice of attributes.
-// This is copied from golang sdk.
-func argsToAttrSlice(args []any) []slog.Attr {
-	var (
-		attr  slog.Attr
-		attrs []slog.Attr
-	)
-	for len(args) > 0 {
-		attr, args = argsToAttr(args)
-		attrs = append(attrs, attr)
-	}
-	return attrs
-}
-
-// This is copied from golang sdk.
-const badKey = "!BADKEY"
-
-// argsToAttr turns a prefix of the nonempty args slice into an Attr
-// and returns the unconsumed portion of the slice.
-// If args[0] is an Attr, it returns it.
-// If args[0] is a string, it treats the first two elements as
-// a key-value pair.
-// Otherwise, it treats args[0] as a value with a missing key.
-// This is copied from golang sdk.
-func argsToAttr(args []any) (slog.Attr, []any) {
-	switch x := args[0].(type) {
-	case string:
-		if len(args) == 1 {
-			return slog.String(badKey, x), nil
-		}
-		return slog.Any(x, args[1]), args[2:]
-
-	case slog.Attr:
-		return x, args[1:]
-
-	default:
-		return slog.Any(badKey, x), args[1:]
-	}
 }

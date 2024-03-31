@@ -95,6 +95,9 @@ func TestHandlerMultipleAttrExtractor(t *testing.T) {
 				}
 				return nil
 			},
+			func(_ context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
+				return []slog.Attr{}
+			},
 		},
 		Appenders: []AttrExtractor{
 			ExtractAppended,
@@ -106,6 +109,9 @@ func TestHandlerMultipleAttrExtractor(t *testing.T) {
 					}
 					return v
 				}
+				return nil
+			},
+			func(_ context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
 				return nil
 			},
 		},
