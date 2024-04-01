@@ -13,14 +13,14 @@ import (
 	"github.com/veqryn/slog-context/internal/test"
 )
 
-func TestAttrCollectorMiddleware(t *testing.T) {
+func TestAttrCollection(t *testing.T) {
 	// Create the *slogctx.Handler middleware
 	tester := &test.Handler{}
 	h := slogctx.NewHandler(
 		tester,
 		&slogctx.HandlerOptions{
 			Prependers: []slogctx.AttrExtractor{
-				AttrCollectorExtractor,   // our sloghttp middleware extractor
+				ExtractAttrCollection,    // our sloghttp middleware extractor
 				slogctx.ExtractPrepended, // for all other prepended attributes
 			},
 		},
@@ -30,7 +30,7 @@ func TestAttrCollectorMiddleware(t *testing.T) {
 	ctx := slogctx.NewCtx(context.Background(), slog.New(h))
 
 	// Setup with our sloghttp middleware, a logging middleware, then our endpoint
-	httpHandler := AttrCollectorMiddleware(
+	httpHandler := AttrCollection(
 		httpLoggingMiddleware(
 			http.HandlerFunc(helloUser),
 		),
@@ -121,7 +121,7 @@ func TestOutsideRequest(t *testing.T) {
 		tester,
 		&slogctx.HandlerOptions{
 			Prependers: []slogctx.AttrExtractor{
-				AttrCollectorExtractor,   // our sloghttp middleware extractor
+				ExtractAttrCollection,    // our sloghttp middleware extractor
 				slogctx.ExtractPrepended, // for all other prepended attributes
 			},
 		},

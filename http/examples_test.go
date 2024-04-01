@@ -9,7 +9,7 @@ import (
 	sloghttp "github.com/veqryn/slog-context/http"
 )
 
-func ExampleAttrCollectorExtractor() {
+func ExampleExtractAttrCollection() {
 	// Create the *slogctx.Handler middleware
 	h := slogctx.NewHandler(
 		slog.NewJSONHandler(os.Stdout, nil), // The next or final handler in the chain
@@ -17,15 +17,15 @@ func ExampleAttrCollectorExtractor() {
 			// Prependers will first add the any sloghttp.With attributes,
 			// then anything else Prepended to the ctx
 			Prependers: []slogctx.AttrExtractor{
-				sloghttp.AttrCollectorExtractor, // our sloghttp middleware extractor
-				slogctx.ExtractPrepended,        // for all other prepended attributes
+				sloghttp.ExtractAttrCollection, // our sloghttp middleware extractor
+				slogctx.ExtractPrepended,       // for all other prepended attributes
 			},
 		},
 	)
 	slog.SetDefault(slog.New(h))
 }
 
-func ExampleAttrCollectorMiddleware() {
+func ExampleAttrCollection() {
 	// This is our final api endpoint handler
 	helloUserHandler := func(w http.ResponseWriter, r *http.Request) {
 		// Stand-in for a User ID.
@@ -75,7 +75,7 @@ func ExampleAttrCollectorMiddleware() {
 
 	// Wrap our final handler inside our middlewares.
 	// AttrCollector -> Request Logging -> Final Endpoint Handler (helloUser)
-	handler := sloghttp.AttrCollectorMiddleware(
+	handler := sloghttp.AttrCollection(
 		httpLoggingMiddleware(
 			http.HandlerFunc(helloUserHandler),
 		),

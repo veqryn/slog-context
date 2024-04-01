@@ -11,7 +11,7 @@ import (
 	"github.com/veqryn/slog-context/internal/attr"
 )
 
-// AttrCollectorMiddleware is an http middleware that collects slog.Attr from
+// AttrCollection is an http middleware that collects slog.Attr from
 // any and all later middlewares and the final http request handler, and makes
 // them available to all middlewares and the request handler.
 // Essentially, it lets you collect slog attributes that are discovered later in
@@ -27,7 +27,7 @@ import (
 // stored inside the context. All calls log that include the context will
 // automatically have all the attributes included (ex: slogctx.Info, or
 // slog.InfoContext).
-func AttrCollectorMiddleware(next http.Handler) http.Handler {
+func AttrCollection(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// If the context already contains our map, we don't need to create a new one
 		if ctx := r.Context(); fromCtx(ctx) == nil {
@@ -38,7 +38,7 @@ func AttrCollectorMiddleware(next http.Handler) http.Handler {
 }
 
 // With adds the provided slog.Attr's to the context. If used with
-// sloghttp.AttrCollectorMiddleware it will add them to the context in a way
+// sloghttp.AttrCollection it will add them to the context in a way
 // that is visible to all intermediate middlewares and functions between the
 // collector middleware and the call to With.
 func With(ctx context.Context, args ...any) context.Context {
@@ -73,11 +73,11 @@ func With(ctx context.Context, args ...any) context.Context {
 	return ctx
 }
 
-// AttrCollectorExtractor is a slogctx Extractor that must be used with a
+// ExtractAttrCollection is a slogctx Extractor that must be used with a
 // slogctx.Handler (via slogctx.HandlerOptions) as Prependers or Appenders.
 // It will cause the Handler to add the Attributes added by sloghttp.With to all
 // log lines using that same context.
-func AttrCollectorExtractor(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
+func ExtractAttrCollection(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
 	m := fromCtx(ctx)
 	if m == nil {
 		return nil
