@@ -13,8 +13,6 @@ import (
 )
 
 func TestExtractTraceSpanID(t *testing.T) {
-	t.Parallel()
-
 	tester := &testHandler{}
 	h := slogctx.NewHandler(
 		tester,
@@ -24,7 +22,7 @@ func TestExtractTraceSpanID(t *testing.T) {
 				slogctx.ExtractPrepended,
 			},
 		})
-	slog.SetDefault(slog.New(h))
+	ctx := slogctx.NewCtx(context.Background(), slog.New(h))
 
 	// Manually create the trace id and span id so the test is repeatable
 	traceID, err := trace.TraceIDFromHex(`0123456789abcdef0123456789abcdef`)
@@ -44,7 +42,7 @@ func TestExtractTraceSpanID(t *testing.T) {
 		}),
 	}
 
-	ctx := trace.ContextWithSpan(context.Background(), span)
+	ctx = trace.ContextWithSpan(ctx, span)
 
 	ctx = slogctx.Prepend(ctx, "prepend1", "arg1", "prepend1", "arg2")
 	ctx = slogctx.Append(ctx, "append1", "arg1", "append1", "arg2")

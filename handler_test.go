@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/veqryn/slog-context/internal/test"
 )
 
 type logLine struct {
@@ -21,7 +23,7 @@ type logLine struct {
 func TestHandler(t *testing.T) {
 	t.Parallel()
 
-	tester := &testHandler{}
+	tester := &test.Handler{}
 	h := NewHandler(tester, nil)
 
 	ctx := Prepend(nil, "prepend1", "arg1", slog.String("prepend1", "arg2"))
@@ -35,8 +37,8 @@ func TestHandler(t *testing.T) {
 
 	l := slog.New(h)
 
-	l = l.With("with1", "arg1", "with1", "arg2")
-	l = l.WithGroup("group1")
+	l = l.With("with1", "arg1", "with1", "arg2").With()
+	l = l.WithGroup("group1").WithGroup("")
 	l = l.With("with2", "arg1", "with2", "arg2")
 
 	l.InfoContext(ctx, "main message", "main1", "arg1", "main1", "arg2")
@@ -59,7 +61,7 @@ func TestHandler(t *testing.T) {
 	}
 
 	// Check the source location fields
-	tester.source = true
+	tester.Source = true
 	b, err = tester.MarshalJSON()
 	if err != nil {
 		t.Fatal(err)
@@ -73,7 +75,7 @@ func TestHandler(t *testing.T) {
 
 	if unmarshalled.Source.Function != "github.com/veqryn/slog-context.TestHandler" ||
 		!strings.HasSuffix(unmarshalled.Source.File, "slog-context/handler_test.go") ||
-		unmarshalled.Source.Line != 42 {
+		unmarshalled.Source.Line != 44 {
 		t.Errorf("Expected source fields are incorrect: %#+v\n", unmarshalled)
 	}
 }
@@ -81,7 +83,7 @@ func TestHandler(t *testing.T) {
 func TestHandlerMultipleAttrExtractor(t *testing.T) {
 	t.Parallel()
 
-	tester := &testHandler{}
+	tester := &test.Handler{}
 	h := NewMiddleware(&HandlerOptions{
 		Prependers: []AttrExtractor{
 			ExtractPrepended,
@@ -95,6 +97,9 @@ func TestHandlerMultipleAttrExtractor(t *testing.T) {
 				}
 				return nil
 			},
+			func(_ context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
+				return []slog.Attr{}
+			},
 		},
 		Appenders: []AttrExtractor{
 			ExtractAppended,
@@ -106,6 +111,9 @@ func TestHandlerMultipleAttrExtractor(t *testing.T) {
 					}
 					return v
 				}
+				return nil
+			},
+			func(_ context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
 				return nil
 			},
 		},

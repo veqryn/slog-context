@@ -6,11 +6,11 @@ import (
 	"errors"
 	"log/slog"
 	"testing"
+
+	"github.com/veqryn/slog-context/internal/test"
 )
 
 func TestCtx(t *testing.T) {
-	t.Parallel()
-
 	buf := &bytes.Buffer{}
 	h := slog.NewJSONHandler(buf, &slog.HandlerOptions{
 		AddSource: false,
@@ -18,7 +18,7 @@ func TestCtx(t *testing.T) {
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			// fmt.Printf("ReplaceAttr: key:%s valueKind:%s value:%s nilGroups:%t groups:%#+v\n", a.Key, a.Value.Kind().String(), a.Value.String(), groups == nil, groups)
 			if groups == nil && a.Key == slog.TimeKey {
-				return slog.Time(slog.TimeKey, defaultTime)
+				return slog.Time(slog.TimeKey, test.DefaultTime)
 			}
 			return a
 		},
@@ -26,7 +26,7 @@ func TestCtx(t *testing.T) {
 
 	// Confirm FromCtx retrieves default if nothing stored in ctx yet
 	l := slog.New(h)
-	slog.SetDefault(l)
+	slog.SetDefault(l) // Can cause issues in tests run in parallel, so don't use it in other tests, just this test
 	if FromCtx(nil) != l {
 		t.Error("Expecting default logger retrieved")
 	}
@@ -58,6 +58,13 @@ func TestCtx(t *testing.T) {
 	}
 
 	// Test with wrappers
+	buf.Reset()
+	Log(ctx, slog.LevelDebug-10, "ignored")
+	LogAttrs(ctx, slog.LevelDebug-10, "ignored")
+	if buf.String() != "" {
+		t.Errorf("Expected:\n%s\nGot:\n%s\n", "", buf.String())
+	}
+
 	buf.Reset()
 	Debug(ctx, "main message", "main1", "arg1", "main1", "arg2")
 	expectedDebug := `{"time":"2023-09-29T13:00:59Z","level":"DEBUG","msg":"main message","with1":"arg1","with1":"arg2","with2":"arg1","with2":"arg2","group1":{"with4":"arg1","with4":"arg2","with5":"arg1","with5":"arg2","main1":"arg1","main1":"arg2"}}
