@@ -13,14 +13,14 @@ import (
 	"github.com/veqryn/slog-context/internal/test"
 )
 
-func TestMiddleware(t *testing.T) {
+func TestAttrCollectorMiddleware(t *testing.T) {
 	// Create the *slogctx.Handler middleware
 	tester := &test.Handler{}
 	h := slogctx.NewHandler(
 		tester,
 		&slogctx.HandlerOptions{
 			Prependers: []slogctx.AttrExtractor{
-				Extractor,                // our sloghttp middleware extractor
+				AttrCollectorExtractor,   // our sloghttp middleware extractor
 				slogctx.ExtractPrepended, // for all other prepended attributes
 			},
 		},
@@ -30,9 +30,9 @@ func TestMiddleware(t *testing.T) {
 	ctx := slogctx.NewCtx(context.Background(), slog.New(h))
 
 	// Setup with our sloghttp middleware, a logging middleware, then our endpoint
-	httpHandler := Middleware(
+	httpHandler := AttrCollectorMiddleware(
 		httpLoggingMiddleware(
-			http.HandlerFunc(helloCustomer),
+			http.HandlerFunc(helloUser),
 		),
 	)
 
@@ -58,7 +58,7 @@ func TestMiddleware(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if string(respBody) != "Hello Customer #24680" {
+	if string(respBody) != "Hello User #24680" {
 		t.Fatal("Response body incorrect: ", string(respBody))
 	}
 
@@ -93,8 +93,8 @@ func httpLoggingMiddleware(next http.Handler) http.Handler {
 }
 
 // This is a stand-in for an api endpoint
-func helloCustomer(w http.ResponseWriter, r *http.Request) {
-	// Stand-in for a customer id.
+func helloUser(w http.ResponseWriter, r *http.Request) {
+	// Stand-in for a User ID.
 	// Add it to our middleware's map
 	id := r.URL.Query().Get("id")
 
@@ -104,14 +104,14 @@ func helloCustomer(w http.ResponseWriter, r *http.Request) {
 
 	// slogctx.With will add "foo" only to the Returned context, which will limits its scope
 	// to the rest of this function and any sub-functions called.
-	// The callers of helloCustomer and all the middlewares will not see "foo".
+	// The callers of helloUser and all the middlewares will not see "foo".
 	ctx = slogctx.With(ctx, "foo", "bar")
 
 	// Log some things
-	slogctx.Info(ctx, "saying hello...") // should also have both "path", "id", and
+	slogctx.Info(ctx, "saying hello...") // should also have both "path", "id", and "foo"
 
 	// Respond
-	_, _ = w.Write([]byte("Hello Customer #" + id))
+	_, _ = w.Write([]byte("Hello User #" + id))
 }
 
 func TestOutsideRequest(t *testing.T) {
@@ -121,7 +121,7 @@ func TestOutsideRequest(t *testing.T) {
 		tester,
 		&slogctx.HandlerOptions{
 			Prependers: []slogctx.AttrExtractor{
-				Extractor,                // our sloghttp middleware extractor
+				AttrCollectorExtractor,   // our sloghttp middleware extractor
 				slogctx.ExtractPrepended, // for all other prepended attributes
 			},
 		},
