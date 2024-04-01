@@ -28,7 +28,7 @@ In that same workflow, the `HandlerOptions` and `AttrExtractor` types let us
 extract any custom values from a context and have them automatically be
 prepended or appended to all log lines using that context. By default, there are
 extractors for anything added via `Prepend` and `Append`, but this repository
-contains more optional Extractors that can be added:
+contains some optional Extractors that can be added:
 * `slogotel.ExtractTraceSpanID` extractor will automatically extract the OTEL
 (OpenTelemetry) TraceID and SpanID, and add them to the log record, while also
 annotating the Span with an error code if the log is at error level.

@@ -37,8 +37,8 @@ func TestHandler(t *testing.T) {
 
 	l := slog.New(h)
 
-	l = l.With("with1", "arg1", "with1", "arg2")
-	l = l.WithGroup("group1")
+	l = l.With("with1", "arg1", "with1", "arg2").With()
+	l = l.WithGroup("group1").WithGroup("")
 	l = l.With("with2", "arg1", "with2", "arg2")
 
 	l.InfoContext(ctx, "main message", "main1", "arg1", "main1", "arg2")

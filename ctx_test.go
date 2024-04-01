@@ -59,6 +59,13 @@ func TestCtx(t *testing.T) {
 
 	// Test with wrappers
 	buf.Reset()
+	Log(ctx, slog.LevelDebug-10, "ignored")
+	LogAttrs(ctx, slog.LevelDebug-10, "ignored")
+	if buf.String() != "" {
+		t.Errorf("Expected:\n%s\nGot:\n%s\n", "", buf.String())
+	}
+
+	buf.Reset()
 	Debug(ctx, "main message", "main1", "arg1", "main1", "arg2")
 	expectedDebug := `{"time":"2023-09-29T13:00:59Z","level":"DEBUG","msg":"main message","with1":"arg1","with1":"arg2","with2":"arg1","with2":"arg2","group1":{"with4":"arg1","with4":"arg2","with5":"arg1","with5":"arg2","main1":"arg1","main1":"arg2"}}
 `

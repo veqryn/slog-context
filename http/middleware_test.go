@@ -129,6 +129,7 @@ func TestOutsideRequest(t *testing.T) {
 	ctx := slogctx.NewCtx(context.Background(), slog.New(h))
 
 	ctx = With(ctx, "id", "13579")
+	ctx = With(ctx) // Should be ignored
 
 	slogctx.Info(ctx, "utility method") // should also have "id"
 

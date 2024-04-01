@@ -19,8 +19,8 @@ type Handler struct {
 }
 
 // Enabled returns true
-func (h *Handler) Enabled(context.Context, slog.Level) bool {
-	return true
+func (h *Handler) Enabled(_ context.Context, lvl slog.Level) bool {
+	return lvl >= slog.LevelDebug
 }
 
 // Handle records a log record
