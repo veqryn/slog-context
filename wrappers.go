@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"runtime"
 	"time"
+
+	"github.com/veqryn/slog-context/internal/attr"
 )
 
 // ErrKey is the key used by handlers for an error
@@ -65,6 +67,25 @@ func Warn(ctx context.Context, msg string, args ...any) {
 // [slog.Logger.ErrorContext] logs at LevelError with the given context.
 func Error(ctx context.Context, msg string, args ...any) {
 	log(ctx, FromCtx(ctx), slog.LevelError, msg, args...)
+}
+
+// Panic calls like ErrorContext on the logger stored in the context,
+// or if there isn't any, on the default logger, except with +8 on the level.
+// After this, it panics on any error in the log attributes,
+// or on the msg if none is found.
+func Panic(ctx context.Context, msg string, args ...any) {
+	log(ctx, FromCtx(ctx), slog.LevelError+8, msg, args...)
+
+	// Panic using the first error found, otherwise use the msg
+	for _, attr := range attr.ArgsToAttrSlice(args) {
+		switch t := attr.Value.Any().(type) {
+		case error:
+			if t != nil {
+				panic(t)
+			}
+		}
+	}
+	panic(msg)
 }
 
 // Log calls Log on the logger stored in the context,
