@@ -1,6 +1,8 @@
 package sloggrpc
 
 import (
+	"context"
+
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 )
 
@@ -18,6 +20,8 @@ type InterceptorFilter func(*otelgrpc.InterceptorInfo) bool
 type config struct {
 	InterceptorFilter InterceptorFilter
 	role              string
+	logRequest        func(ctx context.Context, role string, call Call, peer Peer, req Payload)
+	logResponse       func(ctx context.Context, role string, call Call, peer Peer, req Payload, resp Payload, result Result)
 }
 
 // Option applies an option value for a config.
@@ -28,7 +32,9 @@ type Option interface {
 // newConfig returns a config configured with all the passed Options.
 func newConfig(opts []Option, role string) *config {
 	c := &config{
-		role: role,
+		role:        role,
+		logRequest:  slogRequest,
+		logResponse: slogResponse,
 	}
 
 	for _, o := range opts {
@@ -50,4 +56,14 @@ func (o interceptorFilterOption) apply(c *config) {
 	if o.f != nil {
 		c.InterceptorFilter = o.f
 	}
+}
+
+// InterceptorFilterIgnoreReflection returns an InterceptorFilter that will
+// ignore all grpc Reflection calls.
+func InterceptorFilterIgnoreReflection(ii *otelgrpc.InterceptorInfo) bool {
+	call := parseFullMethod(ii.Method)
+	if call.Service == "ServerReflection" {
+		return false
+	}
+	return true
 }
