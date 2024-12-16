@@ -61,7 +61,8 @@ func (o interceptorFilterOption) apply(c *config) {
 // InterceptorFilterIgnoreReflection returns an InterceptorFilter that will
 // ignore all grpc Reflection calls.
 func InterceptorFilterIgnoreReflection(ii *otelgrpc.InterceptorInfo) bool {
-	call := parseFullMethod(ii.Method)
+	// TODO: how to use with server streaming and clients?
+	call := parseFullMethod(ii.UnaryServerInfo.FullMethod)
 	if call.Service == "ServerReflection" {
 		return false
 	}

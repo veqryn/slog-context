@@ -29,7 +29,6 @@ func SlogUnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
 	) (any, error) {
 		// See if we should skip intercepting this call
 		i := &otelgrpc.InterceptorInfo{
-			Method:          info.FullMethod,
 			UnaryServerInfo: info,
 			Type:            otelgrpc.StreamServer,
 		}
@@ -64,5 +63,56 @@ func SlogUnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
 		cfg.logResponse(ctx, cfg.role, call, pr, reqPayload, respPayload, result)
 
 		return resp, err
+	}
+}
+
+// SlogUnaryClientInterceptor returns a grpc.UnaryClientInterceptor suitable
+// for use in a grpc.NewClient or grpc.WithChainUnaryInterceptor call.
+// This interceptor will log requests and responses.
+func SlogUnaryClientInterceptor(opts ...Option) grpc.UnaryClientInterceptor {
+	// Closure over config
+	cfg := newConfig(opts, "server")
+
+	return func(
+		ctx context.Context,
+		method string,
+		req any,
+		resp any,
+		cc *grpc.ClientConn,
+		invoker grpc.UnaryInvoker,
+		callOpts ...grpc.CallOption,
+	) error {
+		// See if we should skip intercepting this call
+		i := &otelgrpc.InterceptorInfo{
+			Method: method,
+			Type:   otelgrpc.UnaryClient,
+		}
+		if cfg.InterceptorFilter != nil && !cfg.InterceptorFilter(i) {
+			return invoker(ctx, method, req, resp, cc, callOpts...)
+		}
+
+		pr := peerAttr(cc.Target())
+		call := parseFullMethod(method)
+		reqPayload := Payload{Payload: req}
+
+		// Log the request
+		cfg.logRequest(ctx, cfg.role, call, pr, reqPayload)
+
+		before := time.Now()
+
+		// Call the next interceptor or the actual invocation
+		err := invoker(ctx, method, req, resp, cc, callOpts...)
+
+		respPayload := Payload{Payload: resp}
+
+		result := Result{
+			Error:   err,
+			Elapsed: time.Since(before),
+		}
+
+		// Log the response
+		cfg.logResponse(ctx, cfg.role, call, pr, reqPayload, respPayload, result)
+
+		return err
 	}
 }
