@@ -30,6 +30,10 @@ type Call struct {
 	Method  string `json:"method,omitempty"`
 }
 
+type StreamInfo struct {
+	MsgID int `json:"msg_id,omitempty"`
+}
+
 // parseFullMethod returns all applicable slog.Attr based on a gRPC's FullMethod.
 //
 // Parsing is consistent with grpc-go implementation:

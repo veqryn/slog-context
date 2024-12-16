@@ -18,7 +18,7 @@ import (
 // for use in a grpc.NewServer or grpc.ChainUnaryInterceptor call.
 // This interceptor will log requests and responses.
 func SlogUnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
-	// Closure over config
+	// Closure:
 	cfg := newConfig(opts, "server")
 
 	return func(
@@ -45,22 +45,23 @@ func SlogUnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
 		reqPayload := Payload{Payload: req}
 
 		// Log the request
-		cfg.logRequest(ctx, cfg.role, call, pr, reqPayload)
-
-		before := time.Now()
-
-		// Call the next interceptor or the actual handler
-		resp, err := handler(ctx, req)
-
-		respPayload := Payload{Payload: resp}
-
-		result := Result{
-			Error:   err,
-			Elapsed: time.Since(before),
+		if cfg.logRequest != nil {
+			cfg.logRequest(ctx, cfg.role, call, pr, reqPayload)
 		}
 
+		// Call the next interceptor or the actual handler
+		before := time.Now()
+		resp, err := handler(ctx, req)
+
 		// Log the response
-		cfg.logResponse(ctx, cfg.role, call, pr, reqPayload, respPayload, result)
+		if cfg.logResponse != nil {
+			respPayload := Payload{Payload: resp}
+			result := Result{
+				Error:   err,
+				Elapsed: time.Since(before),
+			}
+			cfg.logResponse(ctx, cfg.role, call, pr, reqPayload, respPayload, result)
+		}
 
 		return resp, err
 	}
@@ -71,7 +72,7 @@ func SlogUnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
 // This interceptor will log requests and responses.
 func SlogUnaryClientInterceptor(opts ...Option) grpc.UnaryClientInterceptor {
 	// Closure over config
-	cfg := newConfig(opts, "server")
+	cfg := newConfig(opts, "client")
 
 	return func(
 		ctx context.Context,
@@ -96,23 +97,125 @@ func SlogUnaryClientInterceptor(opts ...Option) grpc.UnaryClientInterceptor {
 		reqPayload := Payload{Payload: req}
 
 		// Log the request
-		cfg.logRequest(ctx, cfg.role, call, pr, reqPayload)
-
-		before := time.Now()
+		if cfg.logRequest != nil {
+			cfg.logRequest(ctx, cfg.role, call, pr, reqPayload)
+		}
 
 		// Call the next interceptor or the actual invocation
+		before := time.Now()
 		err := invoker(ctx, method, req, resp, cc, callOpts...)
 
-		respPayload := Payload{Payload: resp}
+		// Log the response
+		if cfg.logResponse != nil {
+			respPayload := Payload{Payload: resp}
+			result := Result{
+				Error:   err,
+				Elapsed: time.Since(before),
+			}
+			cfg.logResponse(ctx, cfg.role, call, pr, reqPayload, respPayload, result)
+		}
 
+		return err
+	}
+}
+
+// clientStream  wraps around the embedded grpc.ClientStream, and intercepts the RecvMsg and
+// SendMsg method call.
+type clientStream struct {
+	grpc.ClientStream
+	desc *grpc.StreamDesc
+
+	cfg               *config
+	call              Call
+	pr                Peer
+	receivedMessageID int
+	sentMessageID     int
+}
+
+func (w *clientStream) RecvMsg(m any) error {
+	before := time.Now()
+	err := w.ClientStream.RecvMsg(m)
+	w.receivedMessageID++
+
+	if w.cfg.logStreamRecv != nil {
+		streamInfo := StreamInfo{MsgID: w.receivedMessageID}
+		recvPayload := Payload{Payload: m}
 		result := Result{
 			Error:   err,
 			Elapsed: time.Since(before),
 		}
+		w.cfg.logStreamRecv(w.Context(), w.cfg.role, w.call, streamInfo, w.pr, recvPayload, result)
+	}
+	return err
+}
 
-		// Log the response
-		cfg.logResponse(ctx, cfg.role, call, pr, reqPayload, respPayload, result)
+func (w *clientStream) SendMsg(m any) error {
+	before := time.Now()
+	err := w.ClientStream.SendMsg(m)
+	w.sentMessageID++
 
-		return err
+	if w.cfg.logStreamSend != nil {
+		streamInfo := StreamInfo{MsgID: w.sentMessageID}
+		sendPayload := Payload{Payload: m}
+		result := Result{
+			Error:   err,
+			Elapsed: time.Since(before),
+		}
+		w.cfg.logStreamSend(w.Context(), w.cfg.role, w.call, streamInfo, w.pr, sendPayload, result)
+	}
+	return err
+}
+
+func wrapClientStream(s grpc.ClientStream, desc *grpc.StreamDesc, cfg *config, call Call, pr Peer) *clientStream {
+	return &clientStream{
+		ClientStream: s,
+		desc:         desc,
+		cfg:          cfg,
+		call:         call,
+		pr:           pr,
+	}
+}
+
+// SlogStreamClientInterceptor returns a grpc.StreamClientInterceptor suitable
+// for use in a grpc.NewClient or grpc.WithChainStreamInterceptor call.
+// This interceptor will log stream start, sends and receives.
+func SlogStreamClientInterceptor(opts ...Option) grpc.StreamClientInterceptor {
+	cfg := newConfig(opts, "client")
+
+	return func(
+		ctx context.Context,
+		desc *grpc.StreamDesc,
+		cc *grpc.ClientConn,
+		method string,
+		streamer grpc.Streamer,
+		callOpts ...grpc.CallOption,
+	) (grpc.ClientStream, error) {
+		// See if we should skip intercepting this call
+		i := &otelgrpc.InterceptorInfo{
+			Method: method,
+			Type:   otelgrpc.StreamClient,
+		}
+		if cfg.InterceptorFilter != nil && !cfg.InterceptorFilter(i) {
+			return streamer(ctx, desc, cc, method, callOpts...)
+		}
+
+		pr := peerAttr(cc.Target())
+		call := parseFullMethod(method)
+
+		before := time.Now()
+		s, err := streamer(ctx, desc, cc, method, callOpts...)
+
+		if cfg.logStreamStart != nil {
+			result := Result{
+				Error:   err,
+				Elapsed: time.Since(before),
+			}
+			cfg.logStreamStart(ctx, cfg.role, call, pr, result)
+		}
+
+		if err != nil {
+			return s, err
+		}
+		return wrapClientStream(s, desc, cfg, call, pr), nil
 	}
 }

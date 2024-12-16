@@ -22,6 +22,9 @@ type config struct {
 	role              string
 	logRequest        func(ctx context.Context, role string, call Call, peer Peer, req Payload)
 	logResponse       func(ctx context.Context, role string, call Call, peer Peer, req Payload, resp Payload, result Result)
+	logStreamStart    func(ctx context.Context, role string, call Call, peer Peer, result Result)
+	logStreamSend     func(ctx context.Context, role string, call Call, si StreamInfo, peer Peer, req Payload, result Result)
+	logStreamRecv     func(ctx context.Context, role string, call Call, si StreamInfo, peer Peer, resp Payload, result Result)
 }
 
 // Option applies an option value for a config.
@@ -32,9 +35,12 @@ type Option interface {
 // newConfig returns a config configured with all the passed Options.
 func newConfig(opts []Option, role string) *config {
 	c := &config{
-		role:        role,
-		logRequest:  slogRequest,
-		logResponse: slogResponse,
+		role:           role,
+		logRequest:     slogRequest,
+		logResponse:    slogResponse,
+		logStreamStart: slogStreamStart,
+		logStreamSend:  slogStreamSend,
+		logStreamRecv:  slogStreamRecv,
 	}
 
 	for _, o := range opts {
@@ -61,10 +67,23 @@ func (o interceptorFilterOption) apply(c *config) {
 // InterceptorFilterIgnoreReflection returns an InterceptorFilter that will
 // ignore all grpc Reflection calls.
 func InterceptorFilterIgnoreReflection(ii *otelgrpc.InterceptorInfo) bool {
-	// TODO: how to use with server streaming and clients?
-	call := parseFullMethod(ii.UnaryServerInfo.FullMethod)
+	call := parseFullMethod(FullMethod(ii))
 	if call.Service == "ServerReflection" {
 		return false
 	}
 	return true
+}
+
+// FullMethod returns the full grpc method name, when given an *otelgrpc.InterceptorInfo
+func FullMethod(ii *otelgrpc.InterceptorInfo) string {
+	if ii.Method != "" {
+		return ii.Method
+	}
+	if ii.UnaryServerInfo != nil && ii.UnaryServerInfo.FullMethod != "" {
+		return ii.UnaryServerInfo.FullMethod
+	}
+	if ii.StreamServerInfo != nil && ii.StreamServerInfo.FullMethod != "" {
+		return ii.StreamServerInfo.FullMethod
+	}
+	return ""
 }

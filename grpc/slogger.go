@@ -10,7 +10,21 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// slogRequest logs a grpc request being received/sent
+func appendCode(attrs []slog.Attr, err error) (slog.Level, []slog.Attr) {
+	if err != nil {
+		s, _ := status.FromError(err)
+		return slog.LevelWarn, append(attrs,
+			slog.String("code_name", s.Code().String()),
+			slog.Int("code", int(s.Code())),
+			slog.String("err", s.Message()),
+		)
+	}
+	return slog.LevelInfo, append(attrs,
+		slog.String("code_name", codes.OK.String()),
+		slog.Int("code", int(codes.OK)),
+	)
+}
+
 func slogRequest(ctx context.Context, role string, call Call, peer Peer, req Payload) {
 	slogctx.LogAttrs(ctx, slog.LevelInfo, "rpcReq",
 		slog.Any("call", call),
@@ -19,28 +33,59 @@ func slogRequest(ctx context.Context, role string, call Call, peer Peer, req Pay
 	)
 }
 
-// slogResponse logs a grpc response being sent/received
 func slogResponse(ctx context.Context, role string, call Call, peer Peer, req Payload, resp Payload, result Result) {
-	level := slog.LevelInfo
+	level, attrs := appendCode(make([]slog.Attr, 0, 7), result.Error)
 
-	attrs := make([]slog.Attr, 0, 7)
-	if result.Error != nil {
-		level = slog.LevelWarn
-		s, _ := status.FromError(result.Error)
-		attrs = append(attrs, slog.String("code_name", s.Code().String()))
-		attrs = append(attrs, slog.Int("code", int(s.Code())))
-		attrs = append(attrs, slog.String("err", s.Message()))
-	} else {
-		attrs = append(attrs, slog.String("code_name", codes.OK.String()))
-		attrs = append(attrs, slog.Int("code", int(codes.OK)))
-	}
-
-	// Use floating point division here for higher precision (instead of Millisecond method).
-	attrs = append(attrs, slog.Float64("ms", float64(result.Elapsed)/float64(time.Millisecond)))
-
-	attrs = append(attrs, slog.Any("call", call))
-	attrs = append(attrs, slog.Any("peer", peer))
-	attrs = append(attrs, slog.Any("resp", resp.Payload))
+	attrs = append(attrs,
+		slog.Any("call", call),
+		slog.Any("peer", peer),
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		slog.Float64("ms", float64(result.Elapsed)/float64(time.Millisecond)),
+		slog.Any("resp", resp.Payload),
+	)
 
 	slogctx.LogAttrs(ctx, level, "rpcResp", attrs...)
+}
+
+func slogStreamStart(ctx context.Context, role string, call Call, peer Peer, result Result) {
+	level, attrs := appendCode(make([]slog.Attr, 0, 6), result.Error)
+
+	attrs = append(attrs,
+		slog.Any("call", call),
+		slog.Any("peer", peer),
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		slog.Float64("ms", float64(result.Elapsed)/float64(time.Millisecond)),
+	)
+
+	slogctx.LogAttrs(ctx, level, "rpcStreamStart", attrs...)
+}
+
+func slogStreamSend(ctx context.Context, role string, call Call, desc StreamInfo, peer Peer, req Payload, result Result) {
+	level, attrs := appendCode(make([]slog.Attr, 0, 8), result.Error)
+
+	attrs = append(attrs,
+		slog.Any("call", call),
+		slog.Any("desc", desc),
+		slog.Any("peer", peer),
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		slog.Float64("ms", float64(result.Elapsed)/float64(time.Millisecond)),
+		slog.Any("req", req.Payload),
+	)
+
+	slogctx.LogAttrs(ctx, level, "rpcStreamSend", attrs...)
+}
+
+func slogStreamRecv(ctx context.Context, role string, call Call, desc StreamInfo, peer Peer, resp Payload, result Result) {
+	level, attrs := appendCode(make([]slog.Attr, 0, 8), result.Error)
+
+	attrs = append(attrs,
+		slog.Any("call", call),
+		slog.Any("desc", desc),
+		slog.Any("peer", peer),
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		slog.Float64("ms", float64(result.Elapsed)/float64(time.Millisecond)),
+		slog.Any("resp", resp.Payload),
+	)
+
+	slogctx.LogAttrs(ctx, level, "rpcStreamRecv", attrs...)
 }
