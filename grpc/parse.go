@@ -31,7 +31,7 @@ type Call struct {
 }
 
 type StreamInfo struct {
-	MsgID int `json:"msg_id,omitempty"`
+	MsgID int `json:"msg_id,omitempty"` // Incrementing ID
 }
 
 // parseFullMethod returns all applicable slog.Attr based on a gRPC's FullMethod.

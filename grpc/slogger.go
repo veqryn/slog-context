@@ -48,6 +48,28 @@ func slogResponse(ctx context.Context, role string, call Call, peer Peer, req Pa
 }
 
 func slogStreamStart(ctx context.Context, role string, call Call, peer Peer, result Result) {
+	if role == "server" {
+		// No need to log the result, as if the server has received the start connection, it will always be good.
+		slogctx.LogAttrs(ctx, slog.LevelInfo, "rpcStreamStart",
+			slog.Any("call", call),
+			slog.Any("peer", peer),
+		)
+
+	} else {
+		level, attrs := appendCode(make([]slog.Attr, 0, 6), result.Error)
+
+		attrs = append(attrs,
+			slog.Any("call", call),
+			slog.Any("peer", peer),
+			// Use floating point division here for higher precision (instead of Millisecond method).
+			slog.Float64("ms", float64(result.Elapsed)/float64(time.Millisecond)),
+		)
+
+		slogctx.LogAttrs(ctx, level, "rpcStreamStart", attrs...)
+	}
+}
+
+func slogStreamEnd(ctx context.Context, role string, call Call, peer Peer, result Result) {
 	level, attrs := appendCode(make([]slog.Attr, 0, 6), result.Error)
 
 	attrs = append(attrs,
@@ -57,7 +79,7 @@ func slogStreamStart(ctx context.Context, role string, call Call, peer Peer, res
 		slog.Float64("ms", float64(result.Elapsed)/float64(time.Millisecond)),
 	)
 
-	slogctx.LogAttrs(ctx, level, "rpcStreamStart", attrs...)
+	slogctx.LogAttrs(ctx, level, "rpcStreamEnd", attrs...)
 }
 
 func slogStreamSend(ctx context.Context, role string, call Call, desc StreamInfo, peer Peer, req Payload, result Result) {

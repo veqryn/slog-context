@@ -23,6 +23,7 @@ type config struct {
 	logRequest        func(ctx context.Context, role string, call Call, peer Peer, req Payload)
 	logResponse       func(ctx context.Context, role string, call Call, peer Peer, req Payload, resp Payload, result Result)
 	logStreamStart    func(ctx context.Context, role string, call Call, peer Peer, result Result)
+	logStreamEnd      func(ctx context.Context, role string, call Call, peer Peer, result Result)
 	logStreamSend     func(ctx context.Context, role string, call Call, si StreamInfo, peer Peer, req Payload, result Result)
 	logStreamRecv     func(ctx context.Context, role string, call Call, si StreamInfo, peer Peer, resp Payload, result Result)
 }
@@ -39,6 +40,7 @@ func newConfig(opts []Option, role string) *config {
 		logRequest:     slogRequest,
 		logResponse:    slogResponse,
 		logStreamStart: slogStreamStart,
+		logStreamEnd:   slogStreamEnd,
 		logStreamSend:  slogStreamSend,
 		logStreamRecv:  slogStreamRecv,
 	}
@@ -76,14 +78,11 @@ func InterceptorFilterIgnoreReflection(ii *otelgrpc.InterceptorInfo) bool {
 
 // FullMethod returns the full grpc method name, when given an *otelgrpc.InterceptorInfo
 func FullMethod(ii *otelgrpc.InterceptorInfo) string {
-	if ii.Method != "" {
-		return ii.Method
-	}
 	if ii.UnaryServerInfo != nil && ii.UnaryServerInfo.FullMethod != "" {
 		return ii.UnaryServerInfo.FullMethod
 	}
 	if ii.StreamServerInfo != nil && ii.StreamServerInfo.FullMethod != "" {
 		return ii.StreamServerInfo.FullMethod
 	}
-	return ""
+	return ii.Method
 }

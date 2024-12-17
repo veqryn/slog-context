@@ -2,6 +2,7 @@ package sloggrpc
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -125,20 +126,20 @@ type clientStream struct {
 	grpc.ClientStream
 	desc *grpc.StreamDesc
 
-	cfg               *config
-	call              Call
-	pr                Peer
-	receivedMessageID int
-	sentMessageID     int
+	cfg       *config
+	call      Call
+	pr        Peer
+	before    time.Time
+	messageID int
 }
 
 func (w *clientStream) RecvMsg(m any) error {
 	before := time.Now()
 	err := w.ClientStream.RecvMsg(m)
-	w.receivedMessageID++
+	w.messageID++
 
 	if w.cfg.logStreamRecv != nil {
-		streamInfo := StreamInfo{MsgID: w.receivedMessageID}
+		streamInfo := StreamInfo{MsgID: w.messageID}
 		recvPayload := Payload{Payload: m}
 		result := Result{
 			Error:   err,
@@ -152,10 +153,10 @@ func (w *clientStream) RecvMsg(m any) error {
 func (w *clientStream) SendMsg(m any) error {
 	before := time.Now()
 	err := w.ClientStream.SendMsg(m)
-	w.sentMessageID++
+	w.messageID++
 
 	if w.cfg.logStreamSend != nil {
-		streamInfo := StreamInfo{MsgID: w.sentMessageID}
+		streamInfo := StreamInfo{MsgID: w.messageID}
 		sendPayload := Payload{Payload: m}
 		result := Result{
 			Error:   err,
@@ -166,11 +167,25 @@ func (w *clientStream) SendMsg(m any) error {
 	return err
 }
 
-func wrapClientStream(s grpc.ClientStream, desc *grpc.StreamDesc, cfg *config, call Call, pr Peer) *clientStream {
+func (w *clientStream) CloseSend() error {
+	err := w.ClientStream.CloseSend()
+
+	if w.cfg.logStreamEnd != nil {
+		result := Result{
+			Error:   err,
+			Elapsed: time.Since(w.before),
+		}
+		w.cfg.logStreamEnd(w.Context(), w.cfg.role, w.call, w.pr, result)
+	}
+	return err
+}
+
+func wrapClientStream(s grpc.ClientStream, desc *grpc.StreamDesc, cfg *config, before time.Time, call Call, pr Peer) *clientStream {
 	return &clientStream{
 		ClientStream: s,
 		desc:         desc,
 		cfg:          cfg,
+		before:       before,
 		call:         call,
 		pr:           pr,
 	}
@@ -216,6 +231,110 @@ func SlogStreamClientInterceptor(opts ...Option) grpc.StreamClientInterceptor {
 		if err != nil {
 			return s, err
 		}
-		return wrapClientStream(s, desc, cfg, call, pr), nil
+		return wrapClientStream(s, desc, cfg, before, call, pr), nil
+	}
+}
+
+// serverStream wraps around the embedded grpc.ServerStream, and intercepts the RecvMsg and
+// SendMsg method call.
+type serverStream struct {
+	grpc.ServerStream
+
+	cfg       *config
+	call      Call
+	pr        Peer
+	messageID int
+}
+
+func (w *serverStream) RecvMsg(m any) error {
+	before := time.Now()
+	err := w.ServerStream.RecvMsg(m)
+	if err == io.EOF {
+		// Do not record the client closing their sending channel
+		return err
+	}
+	w.messageID++
+
+	if w.cfg.logStreamRecv != nil {
+		streamInfo := StreamInfo{MsgID: w.messageID}
+		recvPayload := Payload{Payload: m}
+		result := Result{
+			Error:   err,
+			Elapsed: time.Since(before),
+		}
+		w.cfg.logStreamRecv(w.Context(), w.cfg.role, w.call, streamInfo, w.pr, recvPayload, result)
+	}
+	return err
+}
+
+func (w *serverStream) SendMsg(m any) error {
+	before := time.Now()
+	err := w.ServerStream.SendMsg(m)
+	w.messageID++
+
+	if w.cfg.logStreamSend != nil {
+		streamInfo := StreamInfo{MsgID: w.messageID}
+		sendPayload := Payload{Payload: m}
+		result := Result{
+			Error:   err,
+			Elapsed: time.Since(before),
+		}
+		w.cfg.logStreamSend(w.Context(), w.cfg.role, w.call, streamInfo, w.pr, sendPayload, result)
+	}
+	return err
+}
+
+func wrapServerStream(ss grpc.ServerStream, cfg *config, call Call, pr Peer) *serverStream {
+	return &serverStream{
+		ServerStream: ss,
+		cfg:          cfg,
+		call:         call,
+		pr:           pr,
+	}
+}
+
+// SlogStreamServerInterceptor returns a grpc.StreamServerInterceptor suitable
+// for use in a grpc.NewServer call.
+// This interceptor will log stream start, sends and receives.
+func SlogStreamServerInterceptor(opts ...Option) grpc.StreamServerInterceptor {
+	cfg := newConfig(opts, "server")
+
+	return func(
+		srv any,
+		ss grpc.ServerStream,
+		info *grpc.StreamServerInfo,
+		handler grpc.StreamHandler,
+	) error {
+		// See if we should skip intercepting this call
+		i := &otelgrpc.InterceptorInfo{
+			StreamServerInfo: info,
+			Type:             otelgrpc.StreamServer,
+		}
+		if cfg.InterceptorFilter != nil && !cfg.InterceptorFilter(i) {
+			return handler(srv, ss)
+		}
+
+		pr := Peer{}
+		if p, ok := peer.FromContext(ss.Context()); ok {
+			pr = peerAttr(p.Addr.String())
+		}
+		call := parseFullMethod(info.FullMethod)
+
+		if cfg.logStreamStart != nil {
+			cfg.logStreamStart(ss.Context(), cfg.role, call, pr, Result{}) // Empty result, since starting the stream was a success
+		}
+
+		before := time.Now()
+		err := handler(srv, wrapServerStream(ss, cfg, call, pr))
+
+		if cfg.logStreamEnd != nil {
+			result := Result{
+				Error:   err,
+				Elapsed: time.Since(before),
+			}
+			cfg.logStreamEnd(ss.Context(), cfg.role, call, pr, result)
+		}
+
+		return err
 	}
 }
