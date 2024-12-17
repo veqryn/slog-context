@@ -12,6 +12,12 @@ import (
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+type Role struct {
+	Role         string `json:"role,omitempty"`
+	ClientStream bool   `json:"client_stream,omitempty"`
+	ServerStream bool   `json:"server_stream,omitempty"`
+}
+
 // Payload contains the protobuf message and metadata about it
 type Payload struct {
 	Payload any `json:"payload,omitempty"`

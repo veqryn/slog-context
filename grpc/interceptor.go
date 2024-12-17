@@ -16,59 +16,6 @@ import (
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// SlogUnaryServerInterceptor returns a grpc.UnaryServerInterceptor suitable
-// for use in a grpc.NewServer or grpc.ChainUnaryInterceptor call.
-// This interceptor will log requests and responses.
-func SlogUnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
-	// Closure:
-	cfg := newConfig(opts, "server")
-
-	return func(
-		ctx context.Context,
-		req any,
-		info *grpc.UnaryServerInfo,
-		handler grpc.UnaryHandler,
-	) (any, error) {
-		// See if we should skip intercepting this call
-		i := &otelgrpc.InterceptorInfo{
-			UnaryServerInfo: info,
-			Type:            otelgrpc.StreamServer,
-		}
-		if cfg.InterceptorFilter != nil && !cfg.InterceptorFilter(i) {
-			return handler(ctx, req)
-		}
-
-		pr := Peer{}
-		if p, ok := peer.FromContext(ctx); ok {
-			pr = peerAttr(p.Addr.String())
-		}
-
-		call := parseFullMethod(info.FullMethod)
-		reqPayload := Payload{Payload: req}
-
-		// Log the request
-		if cfg.logRequest != nil {
-			cfg.logRequest(ctx, cfg.role, call, pr, reqPayload)
-		}
-
-		// Call the next interceptor or the actual handler
-		before := time.Now()
-		resp, err := handler(ctx, req)
-
-		// Log the response
-		if cfg.logResponse != nil {
-			respPayload := Payload{Payload: resp}
-			result := Result{
-				Error:   err,
-				Elapsed: time.Since(before),
-			}
-			cfg.logResponse(ctx, cfg.role, call, pr, reqPayload, respPayload, result)
-		}
-
-		return resp, err
-	}
-}
-
 // SlogUnaryClientInterceptor returns a grpc.UnaryClientInterceptor suitable
 // for use in a grpc.NewClient or grpc.WithChainUnaryInterceptor call.
 // This interceptor will log requests and responses.
@@ -97,10 +44,11 @@ func SlogUnaryClientInterceptor(opts ...Option) grpc.UnaryClientInterceptor {
 		pr := peerAttr(cc.Target())
 		call := parseFullMethod(method)
 		reqPayload := Payload{Payload: req}
+		role := Role{Role: cfg.role}
 
 		// Log the request
 		if cfg.logRequest != nil {
-			cfg.logRequest(ctx, cfg.role, call, pr, reqPayload)
+			cfg.logRequest(ctx, role, call, pr, reqPayload)
 		}
 
 		// Call the next interceptor or the actual invocation
@@ -114,7 +62,7 @@ func SlogUnaryClientInterceptor(opts ...Option) grpc.UnaryClientInterceptor {
 				Error:   err,
 				Elapsed: time.Since(before),
 			}
-			cfg.logResponse(ctx, cfg.role, call, pr, reqPayload, respPayload, result)
+			cfg.logResponse(ctx, role, call, pr, reqPayload, respPayload, result)
 		}
 
 		return err
@@ -128,6 +76,7 @@ type clientStream struct {
 	desc *grpc.StreamDesc
 
 	cfg       *config
+	role      Role
 	call      Call
 	pr        Peer
 	before    time.Time
@@ -139,14 +88,49 @@ func (w *clientStream) RecvMsg(m any) error {
 	err := w.ClientStream.RecvMsg(m)
 	id := w.messageID.Add(1)
 
-	if w.cfg.logStreamRecv != nil {
+	// With server-streaming-only, the CloseSend is sent right away,
+	// so we can only tell that the stream is done when we receive the io.EOF.
+	if err == io.EOF && !w.desc.ClientStreams {
+		if w.cfg.logStreamEnd != nil {
+			result := Result{
+				Error:   nil,
+				Elapsed: time.Since(w.before),
+			}
+			w.cfg.logStreamEnd(w.Context(), w.role, w.call, w.pr, result)
+		}
+		return err
+	}
+
+	result := Result{
+		Error:   err,
+		Elapsed: time.Since(before),
+	}
+
+	// Log the receiving if the server is still sending
+	if w.cfg.logStreamRecv != nil && err != io.EOF {
 		streamInfo := StreamInfo{MsgID: id}
 		recvPayload := Payload{Payload: m}
-		result := Result{
-			Error:   err,
-			Elapsed: time.Since(before),
+		w.cfg.logStreamRecv(w.Context(), w.role, w.call, streamInfo, w.pr, recvPayload, result)
+	}
+
+	// With client-streaming-only, CloseAndRecv sends the CloseSend before the
+	// first and only RecvMsg call. So log the end only after the RecvMsg call.
+	if !w.desc.ServerStreams {
+		if w.cfg.logStreamEnd != nil {
+			result.Elapsed = time.Since(w.before)
+			w.cfg.logStreamEnd(w.Context(), w.role, w.call, w.pr, result)
 		}
-		w.cfg.logStreamRecv(w.Context(), w.cfg.role, w.call, streamInfo, w.pr, recvPayload, result)
+		return err
+	}
+
+	// With bidirectional-streaming, the server has stopped streaming if io.EOF
+	if err == io.EOF {
+		if w.cfg.logStreamEnd != nil {
+			result.Error = nil
+			result.Elapsed = time.Since(w.before)
+			w.cfg.logStreamEnd(w.Context(), w.role, w.call, w.pr, result)
+		}
+		return err
 	}
 	return err
 }
@@ -156,6 +140,8 @@ func (w *clientStream) SendMsg(m any) error {
 	err := w.ClientStream.SendMsg(m)
 	id := w.messageID.Add(1)
 
+	// We don't mind if the error is io.EOF, because if it is, then it is unexpected,
+	// and we should log the situation (the server has stopped receiving prematurely).
 	if w.cfg.logStreamSend != nil {
 		streamInfo := StreamInfo{MsgID: id}
 		sendPayload := Payload{Payload: m}
@@ -163,7 +149,7 @@ func (w *clientStream) SendMsg(m any) error {
 			Error:   err,
 			Elapsed: time.Since(before),
 		}
-		w.cfg.logStreamSend(w.Context(), w.cfg.role, w.call, streamInfo, w.pr, sendPayload, result)
+		w.cfg.logStreamSend(w.Context(), w.role, w.call, streamInfo, w.pr, sendPayload, result)
 	}
 	return err
 }
@@ -171,21 +157,24 @@ func (w *clientStream) SendMsg(m any) error {
 func (w *clientStream) CloseSend() error {
 	err := w.ClientStream.CloseSend()
 
-	if w.cfg.logStreamEnd != nil {
+	// With server-streaming-only, the CloseSend is sent right away.
+	// With client-streaming-only, the CloseSend is sent before the final RecvMsg's.
+	if w.cfg.logStreamClientSendClosed != nil {
 		result := Result{
 			Error:   err,
 			Elapsed: time.Since(w.before),
 		}
-		w.cfg.logStreamEnd(w.Context(), w.cfg.role, w.call, w.pr, result)
+		w.cfg.logStreamClientSendClosed(w.Context(), w.role, w.call, w.pr, result)
 	}
 	return err
 }
 
-func wrapClientStream(s grpc.ClientStream, desc *grpc.StreamDesc, cfg *config, before time.Time, call Call, pr Peer) *clientStream {
+func wrapClientStream(s grpc.ClientStream, desc *grpc.StreamDesc, cfg *config, role Role, before time.Time, call Call, pr Peer) *clientStream {
 	return &clientStream{
 		ClientStream: s,
 		desc:         desc,
 		cfg:          cfg,
+		role:         role,
 		before:       before,
 		call:         call,
 		pr:           pr,
@@ -215,6 +204,11 @@ func SlogStreamClientInterceptor(opts ...Option) grpc.StreamClientInterceptor {
 			return streamer(ctx, desc, cc, method, callOpts...)
 		}
 
+		role := Role{
+			Role:         cfg.role,
+			ClientStream: desc.ClientStreams,
+			ServerStream: desc.ServerStreams,
+		}
 		pr := peerAttr(cc.Target())
 		call := parseFullMethod(method)
 
@@ -226,13 +220,67 @@ func SlogStreamClientInterceptor(opts ...Option) grpc.StreamClientInterceptor {
 				Error:   err,
 				Elapsed: time.Since(before),
 			}
-			cfg.logStreamStart(ctx, cfg.role, call, pr, result)
+			cfg.logStreamStart(ctx, role, call, pr, result)
 		}
 
 		if err != nil {
 			return s, err
 		}
-		return wrapClientStream(s, desc, cfg, before, call, pr), nil
+		return wrapClientStream(s, desc, cfg, role, before, call, pr), nil
+	}
+}
+
+// SlogUnaryServerInterceptor returns a grpc.UnaryServerInterceptor suitable
+// for use in a grpc.NewServer or grpc.ChainUnaryInterceptor call.
+// This interceptor will log requests and responses.
+func SlogUnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
+	// Closure:
+	cfg := newConfig(opts, "server")
+
+	return func(
+		ctx context.Context,
+		req any,
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (any, error) {
+		// See if we should skip intercepting this call
+		i := &otelgrpc.InterceptorInfo{
+			UnaryServerInfo: info,
+			Type:            otelgrpc.StreamServer,
+		}
+		if cfg.InterceptorFilter != nil && !cfg.InterceptorFilter(i) {
+			return handler(ctx, req)
+		}
+
+		pr := Peer{}
+		if p, ok := peer.FromContext(ctx); ok {
+			pr = peerAttr(p.Addr.String())
+		}
+
+		call := parseFullMethod(info.FullMethod)
+		reqPayload := Payload{Payload: req}
+		role := Role{Role: cfg.role}
+
+		// Log the request
+		if cfg.logRequest != nil {
+			cfg.logRequest(ctx, role, call, pr, reqPayload)
+		}
+
+		// Call the next interceptor or the actual handler
+		before := time.Now()
+		resp, err := handler(ctx, req)
+
+		// Log the response
+		if cfg.logResponse != nil {
+			respPayload := Payload{Payload: resp}
+			result := Result{
+				Error:   err,
+				Elapsed: time.Since(before),
+			}
+			cfg.logResponse(ctx, role, call, pr, reqPayload, respPayload, result)
+		}
+
+		return resp, err
 	}
 }
 
@@ -242,6 +290,7 @@ type serverStream struct {
 	grpc.ServerStream
 
 	cfg       *config
+	role      Role
 	call      Call
 	pr        Peer
 	messageID atomic.Int64
@@ -251,7 +300,13 @@ func (w *serverStream) RecvMsg(m any) error {
 	before := time.Now()
 	err := w.ServerStream.RecvMsg(m)
 	if err == io.EOF {
-		// Do not record the client closing their sending channel
+		if w.cfg.logStreamClientSendClosed != nil {
+			result := Result{
+				Error:   nil,
+				Elapsed: time.Since(before),
+			}
+			w.cfg.logStreamClientSendClosed(w.Context(), w.role, w.call, w.pr, result)
+		}
 		return err
 	}
 	id := w.messageID.Add(1)
@@ -263,7 +318,7 @@ func (w *serverStream) RecvMsg(m any) error {
 			Error:   err,
 			Elapsed: time.Since(before),
 		}
-		w.cfg.logStreamRecv(w.Context(), w.cfg.role, w.call, streamInfo, w.pr, recvPayload, result)
+		w.cfg.logStreamRecv(w.Context(), w.role, w.call, streamInfo, w.pr, recvPayload, result)
 	}
 	return err
 }
@@ -280,15 +335,16 @@ func (w *serverStream) SendMsg(m any) error {
 			Error:   err,
 			Elapsed: time.Since(before),
 		}
-		w.cfg.logStreamSend(w.Context(), w.cfg.role, w.call, streamInfo, w.pr, sendPayload, result)
+		w.cfg.logStreamSend(w.Context(), w.role, w.call, streamInfo, w.pr, sendPayload, result)
 	}
 	return err
 }
 
-func wrapServerStream(ss grpc.ServerStream, cfg *config, call Call, pr Peer) *serverStream {
+func wrapServerStream(ss grpc.ServerStream, cfg *config, role Role, call Call, pr Peer) *serverStream {
 	return &serverStream{
 		ServerStream: ss,
 		cfg:          cfg,
+		role:         role,
 		call:         call,
 		pr:           pr,
 	}
@@ -315,6 +371,11 @@ func SlogStreamServerInterceptor(opts ...Option) grpc.StreamServerInterceptor {
 			return handler(srv, ss)
 		}
 
+		role := Role{
+			Role:         cfg.role,
+			ClientStream: info.IsClientStream,
+			ServerStream: info.IsServerStream,
+		}
 		pr := Peer{}
 		if p, ok := peer.FromContext(ss.Context()); ok {
 			pr = peerAttr(p.Addr.String())
@@ -322,18 +383,18 @@ func SlogStreamServerInterceptor(opts ...Option) grpc.StreamServerInterceptor {
 		call := parseFullMethod(info.FullMethod)
 
 		if cfg.logStreamStart != nil {
-			cfg.logStreamStart(ss.Context(), cfg.role, call, pr, Result{}) // Empty result, since starting the stream was a success
+			cfg.logStreamStart(ss.Context(), role, call, pr, Result{}) // Empty result, since starting the stream was a success
 		}
 
 		before := time.Now()
-		err := handler(srv, wrapServerStream(ss, cfg, call, pr))
+		err := handler(srv, wrapServerStream(ss, cfg, role, call, pr))
 
 		if cfg.logStreamEnd != nil {
 			result := Result{
 				Error:   err,
 				Elapsed: time.Since(before),
 			}
-			cfg.logStreamEnd(ss.Context(), cfg.role, call, pr, result)
+			cfg.logStreamEnd(ss.Context(), role, call, pr, result)
 		}
 
 		return err
