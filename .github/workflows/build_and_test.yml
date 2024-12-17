@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         go-version: [ '1.21', '1.22' ]
-        go-module: [ '.', './otel', './examples']
+        go-module: [ '.', './otel', './examples', './grpc' ]
 
     defaults:
       run:
@@ -40,7 +40,7 @@ jobs:
 
       - name: Install dependencies ${{ matrix.go-version }} ${{ matrix.go-module }}
         run: |
-          go get -t -u golang.org/x/tools/cmd/cover
+          go install golang.org/x/tools/cmd/cover@latest
           go mod download
 
       - name: Build ${{ matrix.go-version }} ${{ matrix.go-module }}
@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.21', '1.22' ]
+        go-version: [ '1.21', '1.22', '1.23' ]
 
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +75,7 @@ jobs:
 
       - name: Install dependencies ${{ matrix.go-version }}
         run: |
-          go get -t -u golang.org/x/tools/cmd/cover
+          go install golang.org/x/tools/cmd/cover@latest
           go mod download
 
       - name: Build ${{ matrix.go-version }}

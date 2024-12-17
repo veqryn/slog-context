@@ -12,6 +12,7 @@ import (
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Role contains information about the server and client
 type Role struct {
 	Role         string `json:"role,omitempty"`
 	ClientStream bool   `json:"client_stream,omitempty"`
@@ -36,6 +37,7 @@ type Call struct {
 	Method  string `json:"method,omitempty"`
 }
 
+// StreamInfo contains information specific to streaming Sends and Receives
 type StreamInfo struct {
 	MsgID int64 `json:"msg_id,omitempty"` // Incrementing ID
 }

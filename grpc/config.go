@@ -72,10 +72,7 @@ func (o interceptorFilterOption) apply(c *config) {
 // ignore all grpc Reflection calls.
 func InterceptorFilterIgnoreReflection(ii *otelgrpc.InterceptorInfo) bool {
 	call := parseFullMethod(FullMethod(ii))
-	if call.Service == "ServerReflection" {
-		return false
-	}
-	return true
+	return call.Service != "ServerReflection"
 }
 
 // FullMethod returns the full grpc method name, when given an *otelgrpc.InterceptorInfo

@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-module: [ '.', './otel', './examples']
+        go-module: [ '.', './otel', './examples', './grpc' ]
 
     defaults:
       run:
