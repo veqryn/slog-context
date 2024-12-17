@@ -3,6 +3,7 @@ package sloggrpc
 import (
 	"context"
 	"io"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -130,16 +131,16 @@ type clientStream struct {
 	call      Call
 	pr        Peer
 	before    time.Time
-	messageID int
+	messageID atomic.Int64
 }
 
 func (w *clientStream) RecvMsg(m any) error {
 	before := time.Now()
 	err := w.ClientStream.RecvMsg(m)
-	w.messageID++
+	id := w.messageID.Add(1)
 
 	if w.cfg.logStreamRecv != nil {
-		streamInfo := StreamInfo{MsgID: w.messageID}
+		streamInfo := StreamInfo{MsgID: id}
 		recvPayload := Payload{Payload: m}
 		result := Result{
 			Error:   err,
@@ -153,10 +154,10 @@ func (w *clientStream) RecvMsg(m any) error {
 func (w *clientStream) SendMsg(m any) error {
 	before := time.Now()
 	err := w.ClientStream.SendMsg(m)
-	w.messageID++
+	id := w.messageID.Add(1)
 
 	if w.cfg.logStreamSend != nil {
-		streamInfo := StreamInfo{MsgID: w.messageID}
+		streamInfo := StreamInfo{MsgID: id}
 		sendPayload := Payload{Payload: m}
 		result := Result{
 			Error:   err,
@@ -243,7 +244,7 @@ type serverStream struct {
 	cfg       *config
 	call      Call
 	pr        Peer
-	messageID int
+	messageID atomic.Int64
 }
 
 func (w *serverStream) RecvMsg(m any) error {
@@ -253,10 +254,10 @@ func (w *serverStream) RecvMsg(m any) error {
 		// Do not record the client closing their sending channel
 		return err
 	}
-	w.messageID++
+	id := w.messageID.Add(1)
 
 	if w.cfg.logStreamRecv != nil {
-		streamInfo := StreamInfo{MsgID: w.messageID}
+		streamInfo := StreamInfo{MsgID: id}
 		recvPayload := Payload{Payload: m}
 		result := Result{
 			Error:   err,
@@ -270,10 +271,10 @@ func (w *serverStream) RecvMsg(m any) error {
 func (w *serverStream) SendMsg(m any) error {
 	before := time.Now()
 	err := w.ServerStream.SendMsg(m)
-	w.messageID++
+	id := w.messageID.Add(1)
 
 	if w.cfg.logStreamSend != nil {
-		streamInfo := StreamInfo{MsgID: w.messageID}
+		streamInfo := StreamInfo{MsgID: id}
 		sendPayload := Payload{Payload: m}
 		result := Result{
 			Error:   err,
