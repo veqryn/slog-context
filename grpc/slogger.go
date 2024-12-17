@@ -47,8 +47,8 @@ func slogResponse(ctx context.Context, role Role, call Call, peer Peer, req Payl
 	slogctx.LogAttrs(ctx, level, "rpcResp", attrs...)
 }
 
-func slogStreamStart(ctx context.Context, role Role, call Call, peer Peer, result Result) {
-	if role.Role == "server" {
+func slogStreamStart(ctx context.Context, role Role, call Call, peer Peer, req Payload, result Result) {
+	if role.Role == "server" && req.Payload == nil {
 		// No need to log the result, as if the server has received the start connection, it will always be good.
 		slogctx.LogAttrs(ctx, slog.LevelInfo, "rpcStreamStart",
 			slog.Any("call", call),
@@ -58,7 +58,7 @@ func slogStreamStart(ctx context.Context, role Role, call Call, peer Peer, resul
 	}
 
 	// Starting on the client side can have an error
-	level, attrs := appendCode(make([]slog.Attr, 0, 6), result.Error)
+	level, attrs := appendCode(make([]slog.Attr, 0, 7), result.Error)
 
 	attrs = append(attrs,
 		slog.Any("call", call),
@@ -66,6 +66,9 @@ func slogStreamStart(ctx context.Context, role Role, call Call, peer Peer, resul
 		// Use floating point division here for higher precision (instead of Millisecond method).
 		slog.Float64("ms", float64(result.Elapsed)/float64(time.Millisecond)),
 	)
+	if req.Payload != nil {
+		attrs = append(attrs, slog.Any("req", req.Payload))
+	}
 
 	slogctx.LogAttrs(ctx, level, "rpcStreamStart", attrs...)
 }
@@ -89,8 +92,8 @@ func slogStreamClientSendClosed(ctx context.Context, role Role, call Call, peer 
 	slogctx.LogAttrs(ctx, level, "rpcStreamClientSendClosed", attrs...)
 }
 
-func slogStreamEnd(ctx context.Context, role Role, call Call, peer Peer, result Result) {
-	level, attrs := appendCode(make([]slog.Attr, 0, 6), result.Error)
+func slogStreamEnd(ctx context.Context, role Role, call Call, peer Peer, resp Payload, result Result) {
+	level, attrs := appendCode(make([]slog.Attr, 0, 7), result.Error)
 
 	attrs = append(attrs,
 		slog.Any("call", call),
@@ -98,6 +101,10 @@ func slogStreamEnd(ctx context.Context, role Role, call Call, peer Peer, result 
 		// Use floating point division here for higher precision (instead of Millisecond method).
 		slog.Float64("ms", float64(result.Elapsed)/float64(time.Millisecond)),
 	)
+	if resp.Payload != nil {
+		attrs = append(attrs, slog.Any("req", resp.Payload))
+	}
+
 	slogctx.LogAttrs(ctx, level, "rpcStreamEnd", attrs...)
 }
 

@@ -22,9 +22,9 @@ type config struct {
 	role                      string
 	logRequest                func(ctx context.Context, role Role, call Call, peer Peer, req Payload)
 	logResponse               func(ctx context.Context, role Role, call Call, peer Peer, req Payload, resp Payload, result Result)
-	logStreamStart            func(ctx context.Context, role Role, call Call, peer Peer, result Result)
+	logStreamStart            func(ctx context.Context, role Role, call Call, peer Peer, req Payload, result Result)
 	logStreamClientSendClosed func(ctx context.Context, role Role, call Call, peer Peer, result Result)
-	logStreamEnd              func(ctx context.Context, role Role, call Call, peer Peer, result Result)
+	logStreamEnd              func(ctx context.Context, role Role, call Call, peer Peer, resp Payload, result Result)
 	logStreamSend             func(ctx context.Context, role Role, call Call, si StreamInfo, peer Peer, req Payload, result Result)
 	logStreamRecv             func(ctx context.Context, role Role, call Call, si StreamInfo, peer Peer, resp Payload, result Result)
 }
