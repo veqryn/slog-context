@@ -2,6 +2,7 @@ package sloggrpc
 
 import (
 	"context"
+	"log/slog"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 )
@@ -16,17 +17,14 @@ import (
 // the request should be traced.
 type InterceptorFilter func(*otelgrpc.InterceptorInfo) bool
 
+type AppendToAttributes func(attrs []slog.Attr, attr slog.Attr) []slog.Attr
+
 // config is a group of options for this instrumentation.
 type config struct {
-	InterceptorFilter         InterceptorFilter
-	role                      string
-	logRequest                func(ctx context.Context, role Role, call Call, peer Peer, req Payload)
-	logResponse               func(ctx context.Context, role Role, call Call, peer Peer, req Payload, resp Payload, result Result)
-	logStreamStart            func(ctx context.Context, role Role, call Call, peer Peer, req Payload, result Result)
-	logStreamClientSendClosed func(ctx context.Context, role Role, call Call, peer Peer, result Result)
-	logStreamEnd              func(ctx context.Context, role Role, call Call, peer Peer, resp Payload, result Result)
-	logStreamSend             func(ctx context.Context, role Role, call Call, si StreamInfo, peer Peer, req Payload, result Result)
-	logStreamRecv             func(ctx context.Context, role Role, call Call, si StreamInfo, peer Peer, resp Payload, result Result)
+	InterceptorFilter  InterceptorFilter
+	AppendToAttributes AppendToAttributes
+	role               string
+	log                func(ctx context.Context, level slog.Level, msg string, attrs ...slog.Attr)
 }
 
 // Option applies an option value for a config.
@@ -37,20 +35,47 @@ type Option interface {
 // newConfig returns a config configured with all the passed Options.
 func newConfig(opts []Option, role string) *config {
 	c := &config{
-		role:                      role,
-		logRequest:                slogRequest,
-		logResponse:               slogResponse,
-		logStreamStart:            slogStreamStart,
-		logStreamClientSendClosed: slogStreamClientSendClosed,
-		logStreamEnd:              slogStreamEnd,
-		logStreamSend:             slogStreamSend,
-		logStreamRecv:             slogStreamRecv,
+		AppendToAttributes: defaultAppendToAttributes.appendToAttrs, // TODO: make into an option
+		role:               role,
+		log:                slog.LogAttrs, // TODO: make into an option
 	}
 
 	for _, o := range opts {
 		o.apply(c)
 	}
 	return c
+}
+
+var defaultAppendToAttributes = disableFields{
+	"grpc_pkg":      {},
+	"grpc_system":   {},
+	"role":          {},
+	"stream_server": {},
+	"stream_client": {},
+}
+
+type disableFields map[string]struct{}
+
+func (df disableFields) appendToAttrs(attrs []slog.Attr, attr slog.Attr) []slog.Attr {
+	if _, ok := df[attr.Key]; ok {
+		return attrs
+	}
+	return append(attrs, attr)
+}
+
+// WithAppendToAttributes returns an Option to use the appending function
+func WithAppendToAttributes(f AppendToAttributes) Option {
+	return interceptorAppendToAttributesOption{f: f}
+}
+
+type interceptorAppendToAttributesOption struct {
+	f AppendToAttributes
+}
+
+func (o interceptorAppendToAttributesOption) apply(c *config) {
+	if o.f != nil {
+		c.AppendToAttributes = o.f
+	}
 }
 
 // WithInterceptorFilter returns an Option to use the request filter.

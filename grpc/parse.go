@@ -32,6 +32,7 @@ type Result struct {
 
 // Call contains information about the grpc call being made
 type Call struct {
+	System  string `json:"system,omitempty"`
 	Package string `json:"package,omitempty"`
 	Service string `json:"service,omitempty"`
 	Method  string `json:"method,omitempty"`
