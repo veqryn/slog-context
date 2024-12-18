@@ -288,6 +288,7 @@ type serverStream struct {
 	pr        Peer
 	start     time.Time
 	messageID atomic.Int64
+	finalSend atomic.Value // Only used for storing the final server send/resp in a client-streaming-only call
 }
 
 func (w *serverStream) RecvMsg(m any) error {
@@ -334,13 +335,11 @@ func (w *serverStream) SendMsg(m any) error {
 	sendPayload := Payload{Payload: m}
 
 	// If server streaming, there will be many sent/response payloads, so SendMsg will log them all.
-	// Otherwise, log the end with the first (and only) payload sent.
-	if !w.role.ServerStream {
-		result := Result{
-			Error:   err,
-			Elapsed: time.Since(w.start),
-		}
-		w.cfg.logStreamEnd(w.Context(), w.role, w.call, w.pr, sendPayload, result)
+	// Otherwise, there will be only one or zero payloads sent, and possibly an error sent separately.
+	// If both a payload is sent and a separate error, then we risk calling 'logStreamEnd' twice,
+	// so instead record the payload and let the interceptor handle it post-stream.
+	if !w.role.ServerStream && err == nil {
+		w.finalSend.Store(m)
 		return err
 	}
 
@@ -406,17 +405,23 @@ func SlogStreamServerInterceptor(opts ...Option) grpc.StreamServerInterceptor {
 		}
 
 		before := time.Now()
-		err := handler(srv, wrapServerStream(ss, cfg, role, before, call, pr))
+		wrapped := wrapServerStream(ss, cfg, role, before, call, pr)
+		err := handler(srv, wrapped)
 
 		// If server streaming, there will be many sent/response payloads, so SendMsg will log them all.
-		// Otherwise, log the end with the first (and only) payload sent.
-		if role.ServerStream {
-			result := Result{
-				Error:   err,
-				Elapsed: time.Since(before),
-			}
-			cfg.logStreamEnd(ss.Context(), role, call, pr, Payload{}, result)
+		// Otherwise, there will be only one or zero payloads sent, and possibly an error sent separately.
+		// If both a payload is sent and a separate error, then we risk calling 'logStreamEnd' twice,
+		// so instead record the payload and let the interceptor handle it post-stream.
+		sendPayload := Payload{}
+		if !role.ServerStream {
+			sendPayload.Payload = wrapped.finalSend.Load()
 		}
+		result := Result{
+			Error:   err,
+			Elapsed: time.Since(before),
+		}
+		cfg.logStreamEnd(ss.Context(), role, call, pr, sendPayload, result)
+
 		return err
 	}
 }

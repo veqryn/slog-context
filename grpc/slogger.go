@@ -117,7 +117,12 @@ func (c *config) logStreamSend(ctx context.Context, role Role, call Call, stream
 	attrs = c.appendCommon(attrs, role, call, peer)
 	attrs = c.appendStreamInfo(attrs, streamInfo)
 	attrs = c.appendDurationElapsed(attrs, result.Elapsed)
-	attrs = c.appendPayload(attrs, "req", req)
+
+	key := "resp"
+	if role.Role == "client" {
+		key = "req"
+	}
+	attrs = c.appendPayload(attrs, key, req)
 
 	c.log(ctx, level, "rpcStreamSend", attrs...)
 }
@@ -127,7 +132,12 @@ func (c *config) logStreamRecv(ctx context.Context, role Role, call Call, stream
 	attrs = c.appendCommon(attrs, role, call, peer)
 	attrs = c.appendStreamInfo(attrs, streamInfo)
 	attrs = c.appendDurationElapsed(attrs, result.Elapsed)
-	attrs = c.appendPayload(attrs, "resp", resp)
+
+	key := "req"
+	if role.Role == "client" {
+		key = "resp"
+	}
+	attrs = c.appendPayload(attrs, key, resp)
 
 	c.log(ctx, level, "rpcStreamRecv", attrs...)
 }
