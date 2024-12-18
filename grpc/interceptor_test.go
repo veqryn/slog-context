@@ -3,6 +3,7 @@ package sloggrpc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net"
@@ -96,8 +97,8 @@ func TestUnary(t *testing.T) {
 
 	// Test: Send a bad request, get an error response
 	// Reset the loggers
-	serverLogger.Records = nil
-	clientLogger.Records = nil
+	serverLogger.Clear()
+	clientLogger.Clear()
 
 	app.Reset()
 	app.responseName = []string{"serverError"}
@@ -233,8 +234,8 @@ func TestClientStreaming(t *testing.T) {
 
 	// Test: Create a stream, send 1 good request then 1 bad request, close, get a response and an error
 	// Reset the loggers
-	serverLogger.Records = nil
-	clientLogger.Records = nil
+	serverLogger.Clear()
+	clientLogger.Clear()
 
 	app.Reset()
 	app.responseName = []string{"serverError"}
@@ -295,8 +296,8 @@ func TestClientStreaming(t *testing.T) {
 
 	// Test: Create a stream, send 1 bad then 1 good requests, receive an EOF, close, then get an error
 	// Reset the loggers
-	serverLogger.Records = nil
-	clientLogger.Records = nil
+	serverLogger.Clear()
+	clientLogger.Clear()
 
 	app.Reset()
 	app.responseName = []string{""}
@@ -355,6 +356,213 @@ func TestClientStreaming(t *testing.T) {
 	}
 }
 
+func TestServerStreaming(t *testing.T) {
+	serverLogger := &test.Handler{}
+	slog.SetDefault(slog.New(slogctx.NewHandler(serverLogger, nil)))
+
+	srv := grpc.NewServer(
+		grpc.ChainStreamInterceptor(SlogStreamServerInterceptor(WithAppendToAttributes(testFewAppendToAttributes.appendToAttrs))),
+	)
+
+	app := &server{}
+	protogen.RegisterTestServer(srv, app)
+
+	listener, dialer := getListener()
+	defer listener.Close()
+
+	go func() {
+		if err := srv.Serve(listener); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
+			t.Error(err)
+		}
+	}()
+	defer srv.Stop()
+
+	clientLogger := &test.Handler{}
+	clientCtx := slogctx.NewCtx(context.Background(), slog.New(clientLogger))
+
+	conn, err := grpc.NewClient("bufnet",
+		grpc.WithContextDialer(dialer),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithChainStreamInterceptor(SlogStreamClientInterceptor(WithAppendToAttributes(testFewAppendToAttributes.appendToAttrs))),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	client := protogen.NewTestClient(conn)
+
+	// Test: Create a stream, send a good request, receive two good responses
+	app.Reset()
+	app.responseName = []string{"serverResponse1", "serverResponse2"}
+	app.responseErr = []error{nil, nil}
+
+	stream, err := client.ServerStream(clientCtx, &protogen.TestReq{Name: "clientRequest1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// No need to call CloseSend, as Server-only-streaming calls it for you
+	for {
+		_, err = stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	serverJson, err := serverLogger.MarshalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// fmt.Println(string(serverJson))
+	serverExpected := `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false,"req":{"name":"clientRequest1"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false,"desc":{"msg_id":1},"resp":{"name":"serverResponse1"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false,"desc":{"msg_id":2},"resp":{"name":"serverResponse2"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false}
+`
+	if string(serverJson) != serverExpected {
+		t.Error("Expected:", serverExpected, "\nGot:", string(serverJson))
+	}
+
+	clientJson, err := clientLogger.MarshalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// fmt.Println(string(clientJson))
+	clientExpected := `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":false,"req":{"name":"clientRequest1"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":false,"desc":{"msg_id":1},"resp":{"name":"serverResponse1"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":false,"desc":{"msg_id":2},"resp":{"name":"serverResponse2"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":false}
+`
+	if string(clientJson) != clientExpected {
+		t.Error("Expected:", clientExpected, "\nGot:", string(clientJson))
+	}
+
+	// Test: Create a stream, send a good request receive one good then one bad request, and an error
+	// Reset the loggers
+	serverLogger.Clear()
+	clientLogger.Clear()
+
+	app.Reset()
+	app.responseName = []string{"serverResponse1", "serverError"}
+	app.responseErr = []error{nil, status.New(codes.Internal, "server goes splat").Err()}
+
+	stream, err = client.ServerStream(clientCtx, &protogen.TestReq{Name: "clientRequest1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// No need to call CloseSend, as Server-only-streaming calls it for you
+	for i := 0; ; i++ {
+		_, err = stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if i <= 1 && err != nil {
+			t.Fatal(err)
+		}
+		if i >= 2 {
+			if err == nil {
+				t.Fatal("expected an error")
+			} else {
+				break
+			}
+		}
+	}
+
+	serverJson, err = serverLogger.MarshalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// fmt.Println(string(serverJson))
+	serverExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false,"req":{"name":"clientRequest1"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false,"desc":{"msg_id":1},"resp":{"name":"serverResponse1"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false,"desc":{"msg_id":2},"resp":{"name":"serverError"}}
+{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"Internal","code":13,"err":"server goes splat","role":"server","stream_server":true,"stream_client":false}
+`
+	if string(serverJson) != serverExpected {
+		t.Error("Expected:", serverExpected, "\nGot:", string(serverJson))
+	}
+
+	clientJson, err = clientLogger.MarshalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// fmt.Println(string(clientJson))
+	clientExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":false,"req":{"name":"clientRequest1"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":false,"desc":{"msg_id":1},"resp":{"name":"serverResponse1"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":false,"desc":{"msg_id":2},"resp":{"name":"serverError"}}
+{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"Internal","code":13,"err":"server goes splat","role":"client","stream_server":true,"stream_client":false}
+`
+	if string(clientJson) != clientExpected {
+		t.Error("Expected:", clientExpected, "\nGot:", string(clientJson))
+	}
+
+	// Test: Create a stream, send a good request receive one good then close the stream
+	// Reset the loggers
+	serverLogger.Clear()
+	clientLogger.Clear()
+
+	app.Reset()
+	app.responseName = []string{"serverResponse1", "serverResponse2", "serverResponse3"}
+	app.responseErr = []error{nil, nil, nil}
+
+	stream, err = client.ServerStream(clientCtx, &protogen.TestReq{Name: "clientRequest1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// No need to call CloseSend, as Server-only-streaming calls it for you
+	_, err = stream.Recv()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_ = conn.Close()
+
+	_, err = stream.Recv()
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+	time.Sleep(100 * time.Millisecond) // Let the server catch up
+
+	serverJson, err = serverLogger.MarshalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(string(serverJson))
+	serverExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false,"req":{"name":"clientRequest1"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false,"desc":{"msg_id":1},"resp":{"name":"serverResponse1"}}
+{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamSend","code_name":"Unavailable","code":14,"err":"transport is closing","role":"server","stream_server":true,"stream_client":false,"desc":{"msg_id":2},"resp":{"name":"serverResponse2"}}
+{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"Unavailable","code":14,"err":"transport is closing","role":"server","stream_server":true,"stream_client":false}
+`
+	if string(serverJson) != serverExpected {
+		t.Error("Expected:", serverExpected, "\nGot:", string(serverJson))
+	}
+
+	clientJson, err = clientLogger.MarshalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(string(clientJson))
+	clientExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":false,"req":{"name":"clientRequest1"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":false,"desc":{"msg_id":1},"resp":{"name":"serverResponse1"}}
+{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"Canceled","code":1,"err":"grpc: the client connection is closing","role":"client","stream_server":true,"stream_client":false}
+`
+	if string(clientJson) != clientExpected {
+		t.Error("Expected:", clientExpected, "\nGot:", string(clientJson))
+	}
+}
+
 var _ protogen.TestServer = &server{}
 
 type server struct {
@@ -401,8 +609,22 @@ func (s *server) ClientStream(stream grpc.ClientStreamingServer[protogen.TestReq
 }
 
 func (s *server) ServerStream(req *protogen.TestReq, stream grpc.ServerStreamingServer[protogen.TestResp]) error {
-	// TODO implement me
-	panic("implement me")
+	// fmt.Printf("Server Received: %+v\n", req)
+	for i := 0; i < len(s.responseName); i++ {
+		rval, rerr := &protogen.TestResp{Name: s.responseName[i]}, s.responseErr[i]
+		if rval.Name != "" {
+			err := stream.Send(rval)
+			if err != nil {
+				// fmt.Println(err)
+				return err
+			}
+			time.Sleep(time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+		}
+		if rerr != nil {
+			return rerr
+		}
+	}
+	return nil
 }
 
 func (s *server) BidirectionalStream(stream grpc.BidiStreamingServer[protogen.TestReq, protogen.TestResp]) error {

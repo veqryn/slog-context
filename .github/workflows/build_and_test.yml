@@ -72,6 +72,7 @@ jobs:
           go work init .
           go work use ./examples
           go work use ./otel
+          go work use ./grpc
 
       - name: Install dependencies ${{ matrix.go-version }}
         run: |
@@ -79,10 +80,10 @@ jobs:
           go mod download
 
       - name: Build ${{ matrix.go-version }}
-        run: go build -v ./... ./otel/... ./examples/...
+        run: go build -v ./... ./otel/... ./examples/... ./grpc/...
 
       - name: Test ${{ matrix.go-version }}
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./... ./otel/... ./examples/...
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./... ./otel/... ./examples/... ./grpc/...
 
       - name: Upload coverage reports to Codecov ${{ matrix.go-version }}
         uses: codecov/codecov-action@v3

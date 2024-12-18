@@ -83,32 +83,32 @@ func (w *clientStream) RecvMsg(m any) error {
 	before := time.Now()
 	err := w.ClientStream.RecvMsg(m)
 
+	recvPayload := Payload{Payload: m}
+
 	// With client-streaming-only, CloseAndRecv sends the CloseSend before the
 	// first and only RecvMsg call. So log the end with the payload.
-	if !w.role.ServerStream {
-		recvPayload := Payload{Payload: m}
+	// With server-streaming-only, the CloseSend is sent right away, so we can
+	// only tell that the stream is done when we receive any error.
+	// With bidirectional-streaming, the server stopped streaming if any error.
+	if err != nil || !w.role.ServerStream {
 		result := Result{
 			Error:   err,
 			Elapsed: time.Since(w.start),
+		}
+		if err == io.EOF {
+			result.Error = nil
+			recvPayload.Payload = nil
+		}
+		// Client-streaming-only can somehow see the last received payload,
+		// but server streaming can not.
+		if w.role.ServerStream {
+			recvPayload.Payload = nil
 		}
 		w.cfg.logStreamEnd(w.Context(), w.role, w.call, w.pr, recvPayload, result)
 		return err
 	}
 
 	id := w.messageID.Add(1)
-	recvPayload := Payload{Payload: m}
-
-	if err == io.EOF {
-		// With server-streaming-only, the CloseSend is sent right away,
-		// so we can only tell that the stream is done when we receive the io.EOF.
-		// With bidirectional-streaming, the server has stopped streaming if io.EOF.
-		result := Result{
-			Error:   nil,
-			Elapsed: time.Since(w.start),
-		}
-		w.cfg.logStreamEnd(w.Context(), w.role, w.call, w.pr, recvPayload, result)
-		return err
-	}
 
 	// Server is still sending, so log it was received
 	streamInfo := StreamInfo{MsgID: id}
