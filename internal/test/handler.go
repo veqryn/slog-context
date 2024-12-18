@@ -66,3 +66,9 @@ func (h *Handler) MarshalJSON() ([]byte, error) {
 	}
 	return buf.Bytes(), nil
 }
+
+// Clear deletes all existing records and contexts
+func (h *Handler) Clear() {
+	h.Records = nil
+	h.Ctxs = nil
+}

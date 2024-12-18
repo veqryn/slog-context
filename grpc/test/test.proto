@@ -8,7 +8,10 @@ option go_package = "github.com/veqryn/slog-context/grpc/test/protogen";
 
 // The HuntApp gRPC services.
 service Test {
-  rpc Test (TestReq) returns (TestResp) {}
+  rpc Unary (TestReq) returns (TestResp) {}
+  rpc ClientStream (stream TestReq) returns (TestResp) {}
+  rpc ServerStream (TestReq) returns (stream TestResp) {}
+  rpc BidirectionalStream (stream TestReq) returns (stream TestResp) {}
 }
 
 message TestReq {
