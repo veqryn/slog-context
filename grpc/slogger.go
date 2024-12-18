@@ -61,7 +61,7 @@ func (c *config) logResponse(ctx context.Context, role Role, call Call, peer Pee
 	level, attrs := c.appendCode(make([]slog.Attr, 0, 14), result.Error)
 	attrs = c.appendCommon(attrs, role, call, peer)
 	attrs = c.appendDurationElapsed(attrs, result.Elapsed)
-	attrs = c.appendPayload(attrs, "resp", req)
+	attrs = c.appendPayload(attrs, "resp", resp)
 
 	c.log(ctx, level, "rpcResp", attrs...)
 }

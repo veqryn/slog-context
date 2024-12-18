@@ -43,6 +43,7 @@ func SlogUnaryClientInterceptor(opts ...Option) grpc.UnaryClientInterceptor {
 
 		pr := peerAttr(cc.Target())
 		call := parseFullMethod(method)
+		call.System = "grpc"
 		reqPayload := Payload{Payload: req}
 		role := Role{Role: cfg.role}
 
@@ -203,6 +204,7 @@ func SlogStreamClientInterceptor(opts ...Option) grpc.StreamClientInterceptor {
 		}
 		pr := peerAttr(cc.Target())
 		call := parseFullMethod(method)
+		call.System = "grpc"
 
 		before := time.Now()
 		s, err := streamer(ctx, desc, cc, method, callOpts...)
@@ -252,6 +254,7 @@ func SlogUnaryServerInterceptor(opts ...Option) grpc.UnaryServerInterceptor {
 		}
 
 		call := parseFullMethod(info.FullMethod)
+		call.System = "grpc"
 		reqPayload := Payload{Payload: req}
 		role := Role{Role: cfg.role}
 
@@ -394,6 +397,7 @@ func SlogStreamServerInterceptor(opts ...Option) grpc.StreamServerInterceptor {
 			pr = peerAttr(p.Addr.String())
 		}
 		call := parseFullMethod(info.FullMethod)
+		call.System = "grpc"
 
 		// If client streaming, there will be many request payloads, so RecvMsg will log them all.
 		// Otherwise, log the start with the first (and only) payload received.

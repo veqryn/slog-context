@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	slogctx "github.com/veqryn/slog-context"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 )
 
@@ -37,7 +38,7 @@ func newConfig(opts []Option, role string) *config {
 	c := &config{
 		AppendToAttributes: defaultAppendToAttributes.appendToAttrs, // TODO: make into an option
 		role:               role,
-		log:                slog.LogAttrs, // TODO: make into an option
+		log:                slogctx.LogAttrs, // TODO: make into an option
 	}
 
 	for _, o := range opts {
