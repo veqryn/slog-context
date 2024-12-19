@@ -17,7 +17,7 @@ func (c *config) appendCode(attrs []slog.Attr, err error) (slog.Level, []slog.At
 		attrs = c.AppendToAttributes(attrs, slog.String("code_name", s.Code().String()))
 		attrs = c.AppendToAttributes(attrs, slog.Int("code", int(s.Code())))
 		attrs = c.AppendToAttributes(attrs, slog.String("err", s.Message()))
-		return slog.LevelWarn, attrs
+		return c.ErrorToLevel(err), attrs
 	}
 	attrs = c.AppendToAttributes(attrs, slog.String("code_name", codes.OK.String()))
 	attrs = c.AppendToAttributes(attrs, slog.Int("code", int(codes.OK)))
@@ -98,7 +98,7 @@ func (c *config) logStreamClientSendClosed(ctx context.Context, role Role, call 
 	attrs = c.appendCommon(attrs, role, call, peer)
 	attrs = c.appendDurationElapsed(attrs, result.Elapsed)
 
-	c.log(ctx, level, "rpcStreamClientSendClosed", attrs...)
+	c.log(ctx, level-4, "rpcStreamClientSendClosed", attrs...)
 }
 
 func (c *config) logStreamEnd(ctx context.Context, role Role, call Call, peer Peer, resp Payload, result Result) {

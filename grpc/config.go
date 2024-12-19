@@ -2,10 +2,13 @@ package sloggrpc
 
 import (
 	"context"
+	"io"
 	"log/slog"
 
 	slogctx "github.com/veqryn/slog-context"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Based on or similar to code from:
@@ -18,12 +21,17 @@ import (
 // the request should be traced.
 type InterceptorFilter func(*otelgrpc.InterceptorInfo) bool
 
+// AppendToAttributes allows customizing the attributes, including disabling some
 type AppendToAttributes func(attrs []slog.Attr, attr slog.Attr) []slog.Attr
+
+// ErrorToLevel defines the mapping between the gRPC return error/code to a log level
+type ErrorToLevel func(err error) slog.Level
 
 // config is a group of options for this instrumentation.
 type config struct {
 	InterceptorFilter  InterceptorFilter
 	AppendToAttributes AppendToAttributes
+	ErrorToLevel       ErrorToLevel
 	role               string
 	log                func(ctx context.Context, level slog.Level, msg string, attrs ...slog.Attr)
 }
@@ -40,11 +48,65 @@ func newConfig(opts []Option, role string) *config {
 		role:               role,
 		log:                slogctx.LogAttrs, // TODO: make into an option
 	}
+	if role == "client" {
+		c.ErrorToLevel = DefaultClientErrorToLevel
+	} else {
+		c.ErrorToLevel = DefaultServerErrorToLevel
+	}
 
 	for _, o := range opts {
 		o.apply(c)
 	}
 	return c
+}
+
+// DefaultServerErrorToLevel is the helper mapper that maps gRPC return errors/codes to log levels for server side.
+func DefaultServerErrorToLevel(err error) slog.Level {
+	if err == nil {
+		return slog.LevelInfo
+	}
+	if err == io.EOF {
+		return slog.LevelWarn
+	}
+
+	s, _ := status.FromError(err)
+	switch s.Code() {
+	case codes.OK, codes.NotFound, codes.Canceled, codes.AlreadyExists, codes.InvalidArgument, codes.Unauthenticated:
+		return slog.LevelInfo
+
+	case codes.DeadlineExceeded, codes.PermissionDenied, codes.ResourceExhausted, codes.FailedPrecondition, codes.Aborted,
+		codes.OutOfRange, codes.Unavailable:
+		return slog.LevelWarn
+
+	case codes.Unknown, codes.Unimplemented, codes.Internal, codes.DataLoss:
+		return slog.LevelError
+
+	default:
+		return slog.LevelError
+	}
+}
+
+// DefaultClientErrorToLevel is the helper mapper that maps gRPC return errors/codes to log levels for client side.
+func DefaultClientErrorToLevel(err error) slog.Level {
+	if err == nil {
+		return slog.LevelInfo
+	}
+	if err == io.EOF {
+		return slog.LevelInfo
+	}
+
+	s, _ := status.FromError(err)
+	switch s.Code() {
+	case codes.OK, codes.Canceled, codes.InvalidArgument, codes.NotFound, codes.AlreadyExists, codes.ResourceExhausted,
+		codes.FailedPrecondition, codes.Aborted, codes.OutOfRange:
+		return slog.LevelInfo
+	case codes.Unknown, codes.DeadlineExceeded, codes.PermissionDenied, codes.Unauthenticated:
+		return slog.LevelWarn
+	case codes.Unimplemented, codes.Internal, codes.Unavailable, codes.DataLoss:
+		return slog.LevelWarn // Maybe make this error level?
+	default:
+		return slog.LevelWarn
+	}
 }
 
 var defaultAppendToAttributes = disableFields{
@@ -91,6 +153,21 @@ type interceptorFilterOption struct {
 func (o interceptorFilterOption) apply(c *config) {
 	if o.f != nil {
 		c.InterceptorFilter = o.f
+	}
+}
+
+// WithErrorToLevel returns an Option to use the error to level function
+func WithErrorToLevel(f ErrorToLevel) Option {
+	return interceptorErrorToLevelOption{f: f}
+}
+
+type interceptorErrorToLevelOption struct {
+	f ErrorToLevel
+}
+
+func (o interceptorErrorToLevelOption) apply(c *config) {
+	if o.f != nil {
+		c.ErrorToLevel = o.f
 	}
 }
 

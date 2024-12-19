@@ -57,6 +57,7 @@ func TestUnary(t *testing.T) {
 			SlogUnaryClientInterceptor(
 				WithAppendToAttributes(testAllAppendToAttributes.appendToAttrs),
 				WithInterceptorFilter(testInterceptorFilter),
+				WithErrorToLevel(testClientErrorToLevel),
 			),
 		),
 	)
@@ -128,7 +129,7 @@ func TestUnary(t *testing.T) {
 
 	//fmt.Println(string(serverJson))
 	serverExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcReq","grpc_system":"grpc","grpc_pkg":"com.github.veqryn.slogcontext.grpc.test","grpc_svc":"Test","grpc_method":"Unary","role":"server","stream_server":false,"stream_client":false,"peer_host":"","peer_port":0,"req":{}}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcResp","code_name":"InvalidArgument","code":3,"err":"missing name","grpc_system":"grpc","grpc_pkg":"com.github.veqryn.slogcontext.grpc.test","grpc_svc":"Test","grpc_method":"Unary","role":"server","stream_server":false,"stream_client":false,"peer_host":"","peer_port":0,"resp":{"name":"serverError"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcResp","code_name":"InvalidArgument","code":3,"err":"missing name","grpc_system":"grpc","grpc_pkg":"com.github.veqryn.slogcontext.grpc.test","grpc_svc":"Test","grpc_method":"Unary","role":"server","stream_server":false,"stream_client":false,"peer_host":"","peer_port":0,"resp":{"name":"serverError"}}
 `
 	if string(serverJson) != serverExpected {
 		t.Error("Expected:", serverExpected, "\nGot:", string(serverJson))
@@ -141,7 +142,7 @@ func TestUnary(t *testing.T) {
 
 	//fmt.Println(string(clientJson))
 	clientExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcReq","grpc_system":"grpc","grpc_pkg":"com.github.veqryn.slogcontext.grpc.test","grpc_svc":"Test","grpc_method":"Unary","role":"client","stream_server":false,"stream_client":false,"peer_host":"","peer_port":0,"req":{}}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcResp","code_name":"InvalidArgument","code":3,"err":"missing name","grpc_system":"grpc","grpc_pkg":"com.github.veqryn.slogcontext.grpc.test","grpc_svc":"Test","grpc_method":"Unary","role":"client","stream_server":false,"stream_client":false,"peer_host":"","peer_port":0,"resp":{}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcResp","code_name":"InvalidArgument","code":3,"err":"missing name","grpc_system":"grpc","grpc_pkg":"com.github.veqryn.slogcontext.grpc.test","grpc_svc":"Test","grpc_method":"Unary","role":"client","stream_server":false,"stream_client":false,"peer_host":"","peer_port":0,"resp":{}}
 `
 	if string(clientJson) != clientExpected {
 		t.Error("Expected:", clientExpected, "\nGot:", string(clientJson))
@@ -293,7 +294,7 @@ func TestClientStreaming(t *testing.T) {
 	serverExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","role":"server","stream_server":false,"stream_client":true}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"server","stream_server":false,"stream_client":true,"desc":{"msg_id":1},"req":{"name":"clientRequest1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"server","stream_server":false,"stream_client":true,"desc":{"msg_id":2},"req":{}}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"server","stream_server":false,"stream_client":true,"resp":{"name":"serverError"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"server","stream_server":false,"stream_client":true,"resp":{"name":"serverError"}}
 `
 	if string(serverJson) != serverExpected {
 		t.Error("Expected:", serverExpected, "\nGot:", string(serverJson))
@@ -308,7 +309,7 @@ func TestClientStreaming(t *testing.T) {
 	clientExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"client","stream_server":false,"stream_client":true}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"client","stream_server":false,"stream_client":true,"desc":{"msg_id":1},"req":{"name":"clientRequest1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"client","stream_server":false,"stream_client":true,"desc":{"msg_id":2},"req":{}}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"client","stream_server":false,"stream_client":true,"resp":{"name":"serverError"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"client","stream_server":false,"stream_client":true,"resp":{"name":"serverError"}}
 `
 	if string(clientJson) != clientExpected {
 		t.Error("Expected:", clientExpected, "\nGot:", string(clientJson))
@@ -321,7 +322,7 @@ func TestClientStreaming(t *testing.T) {
 
 	app.Reset()
 	app.responseName = []string{""}
-	app.responseErr = []error{status.New(codes.InvalidArgument, "missing name").Err()}
+	app.responseErr = []error{status.New(codes.PermissionDenied, "missing name").Err()}
 	app.maxReceives = 1
 
 	stream, err = client.ClientStream(clientCtx)
@@ -354,7 +355,7 @@ func TestClientStreaming(t *testing.T) {
 	// fmt.Println(string(serverJson))
 	serverExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","role":"server","stream_server":false,"stream_client":true}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"server","stream_server":false,"stream_client":true,"desc":{"msg_id":1},"req":{"name":"clientRequest1"}}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"server","stream_server":false,"stream_client":true}
+{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"PermissionDenied","code":7,"err":"missing name","role":"server","stream_server":false,"stream_client":true}
 `
 	if string(serverJson) != serverExpected {
 		t.Error("Expected:", serverExpected, "\nGot:", string(serverJson))
@@ -368,8 +369,8 @@ func TestClientStreaming(t *testing.T) {
 	// fmt.Println(string(clientJson))
 	clientExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"client","stream_server":false,"stream_client":true}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"client","stream_server":false,"stream_client":true,"desc":{"msg_id":1},"req":{"name":"clientRequest1"}}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamSend","code_name":"Unknown","code":2,"err":"EOF","role":"client","stream_server":false,"stream_client":true,"desc":{"msg_id":2},"req":{"name":"clientRequest2"}}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"client","stream_server":false,"stream_client":true,"resp":{}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"Unknown","code":2,"err":"EOF","role":"client","stream_server":false,"stream_client":true,"desc":{"msg_id":2},"req":{"name":"clientRequest2"}}
+{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"PermissionDenied","code":7,"err":"missing name","role":"client","stream_server":false,"stream_client":true,"resp":{}}
 `
 	if string(clientJson) != clientExpected {
 		t.Error("Expected:", clientExpected, "\nGot:", string(clientJson))
@@ -514,7 +515,7 @@ func TestServerStreaming(t *testing.T) {
 	serverExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false,"req":{"name":"clientRequest1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false,"desc":{"msg_id":1},"resp":{"name":"serverResponse1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false,"desc":{"msg_id":2},"resp":{"name":"serverError"}}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"Internal","code":13,"err":"server goes splat","role":"server","stream_server":true,"stream_client":false}
+{"time":"2023-09-29T13:00:59Z","level":"ERROR","msg":"rpcStreamEnd","code_name":"Internal","code":13,"err":"server goes splat","role":"server","stream_server":true,"stream_client":false}
 `
 	if string(serverJson) != serverExpected {
 		t.Error("Expected:", serverExpected, "\nGot:", string(serverJson))
@@ -586,7 +587,7 @@ func TestServerStreaming(t *testing.T) {
 	// fmt.Println(string(clientJson))
 	clientExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":false,"req":{"name":"clientRequest1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":false,"desc":{"msg_id":1},"resp":{"name":"serverResponse1"}}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"Canceled","code":1,"err":"grpc: the client connection is closing","role":"client","stream_server":true,"stream_client":false}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"Canceled","code":1,"err":"grpc: the client connection is closing","role":"client","stream_server":true,"stream_client":false}
 `
 	if string(clientJson) != clientExpected {
 		t.Error("Expected:", clientExpected, "\nGot:", string(clientJson))
@@ -684,7 +685,7 @@ func TestBidirectionalStreaming(t *testing.T) {
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":true,"desc":{"msg_id":2},"resp":{"name":"serverResponse1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":true,"desc":{"msg_id":3},"req":{"name":"clientRequest2"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":true,"desc":{"msg_id":4},"resp":{"name":"serverResponse2"}}
-{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamClientSendClosed","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":true}
+{"time":"2023-09-29T13:00:59Z","level":"DEBUG","msg":"rpcStreamClientSendClosed","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":true}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":true}
 `
 	if string(serverJson) != serverExpected {
@@ -701,7 +702,7 @@ func TestBidirectionalStreaming(t *testing.T) {
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":1},"req":{"name":"clientRequest1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":2},"resp":{"name":"serverResponse1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":3},"req":{"name":"clientRequest2"}}
-{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamClientSendClosed","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
+{"time":"2023-09-29T13:00:59Z","level":"DEBUG","msg":"rpcStreamClientSendClosed","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":4},"resp":{"name":"serverResponse2"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
 `
@@ -762,7 +763,7 @@ func TestBidirectionalStreaming(t *testing.T) {
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":true,"desc":{"msg_id":1},"req":{"name":"clientRequest1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":true,"desc":{"msg_id":2},"resp":{"name":"serverResponse1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":true,"desc":{"msg_id":3},"req":{}}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"server","stream_server":true,"stream_client":true}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"server","stream_server":true,"stream_client":true}
 `
 
 	if string(serverJson) != serverExpected {
@@ -779,8 +780,8 @@ func TestBidirectionalStreaming(t *testing.T) {
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":1},"req":{"name":"clientRequest1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":2},"resp":{"name":"serverResponse1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":3},"req":{}}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"client","stream_server":true,"stream_client":true}
-{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamClientSendClosed","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"client","stream_server":true,"stream_client":true}
+{"time":"2023-09-29T13:00:59Z","level":"DEBUG","msg":"rpcStreamClientSendClosed","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
 `
 
 	if string(clientJson) != clientExpected {
@@ -857,7 +858,7 @@ func TestBidirectionalStreaming(t *testing.T) {
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":true,"desc":{"msg_id":2},"resp":{"name":"serverResponse1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":true,"desc":{"msg_id":3},"req":{}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":true,"desc":{"msg_id":4},"resp":{"name":"serverError"}}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"server","stream_server":true,"stream_client":true}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"server","stream_server":true,"stream_client":true}
 `
 
 	if string(serverJson) != serverExpected {
@@ -875,9 +876,9 @@ func TestBidirectionalStreaming(t *testing.T) {
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":2},"resp":{"name":"serverResponse1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":3},"req":{}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":4},"resp":{"name":"serverError"}}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamSend","code_name":"Unknown","code":2,"err":"EOF","role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":5},"req":{"name":"clientRequest3"}}
-{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamClientSendClosed","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
-{"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"client","stream_server":true,"stream_client":true}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"Unknown","code":2,"err":"EOF","role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":5},"req":{"name":"clientRequest3"}}
+{"time":"2023-09-29T13:00:59Z","level":"DEBUG","msg":"rpcStreamClientSendClosed","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"client","stream_server":true,"stream_client":true}
 `
 
 	if string(clientJson) != clientExpected {
@@ -939,7 +940,7 @@ func TestBidirectionalStreaming(t *testing.T) {
 	clientExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":1},"req":{"name":"clientRequest1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
-{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamClientSendClosed","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
+{"time":"2023-09-29T13:00:59Z","level":"DEBUG","msg":"rpcStreamClientSendClosed","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
 `
 
 	if string(clientJson) != clientExpected {
@@ -1078,4 +1079,8 @@ var testFewAppendToAttributes = disableFields{
 
 func testInterceptorFilter(*otelgrpc.InterceptorInfo) bool {
 	return true
+}
+
+func testClientErrorToLevel(err error) slog.Level {
+	return DefaultClientErrorToLevel(err)
 }
