@@ -8,3 +8,4 @@ coverage:
         target: 80%
 ignore:
   - "examples"
+  - "grpc/test"

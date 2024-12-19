@@ -12,6 +12,7 @@ import (
 	slogctx "github.com/veqryn/slog-context"
 	protogen "github.com/veqryn/slog-context/grpc/test/gen"
 	"github.com/veqryn/slog-context/internal/test"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -25,7 +26,12 @@ func TestUnary(t *testing.T) {
 	slog.SetDefault(slog.New(slogctx.NewHandler(serverLogger, nil)))
 
 	srv := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(SlogUnaryServerInterceptor(WithAppendToAttributes(testAllAppendToAttributes.appendToAttrs))),
+		grpc.ChainUnaryInterceptor(
+			SlogUnaryServerInterceptor(
+				WithAppendToAttributes(testAllAppendToAttributes.appendToAttrs),
+				WithInterceptorFilter(testInterceptorFilter),
+			),
+		),
 	)
 
 	app := &server{}
@@ -47,7 +53,12 @@ func TestUnary(t *testing.T) {
 	conn, err := grpc.NewClient("bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithChainUnaryInterceptor(SlogUnaryClientInterceptor(WithAppendToAttributes(testAllAppendToAttributes.appendToAttrs))),
+		grpc.WithChainUnaryInterceptor(
+			SlogUnaryClientInterceptor(
+				WithAppendToAttributes(testAllAppendToAttributes.appendToAttrs),
+				WithInterceptorFilter(testInterceptorFilter),
+			),
+		),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -142,7 +153,12 @@ func TestClientStreaming(t *testing.T) {
 	slog.SetDefault(slog.New(slogctx.NewHandler(serverLogger, nil)))
 
 	srv := grpc.NewServer(
-		grpc.ChainStreamInterceptor(SlogStreamServerInterceptor(WithAppendToAttributes(testFewAppendToAttributes.appendToAttrs))),
+		grpc.ChainStreamInterceptor(
+			SlogStreamServerInterceptor(
+				WithAppendToAttributes(testFewAppendToAttributes.appendToAttrs),
+				WithInterceptorFilter(testInterceptorFilter),
+			),
+		),
 	)
 
 	app := &server{}
@@ -164,7 +180,12 @@ func TestClientStreaming(t *testing.T) {
 	conn, err := grpc.NewClient("bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithChainStreamInterceptor(SlogStreamClientInterceptor(WithAppendToAttributes(testFewAppendToAttributes.appendToAttrs))),
+		grpc.WithChainStreamInterceptor(
+			SlogStreamClientInterceptor(
+				WithAppendToAttributes(testFewAppendToAttributes.appendToAttrs),
+				WithInterceptorFilter(testInterceptorFilter),
+			),
+		),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -360,7 +381,12 @@ func TestServerStreaming(t *testing.T) {
 	slog.SetDefault(slog.New(slogctx.NewHandler(serverLogger, nil)))
 
 	srv := grpc.NewServer(
-		grpc.ChainStreamInterceptor(SlogStreamServerInterceptor(WithAppendToAttributes(testFewAppendToAttributes.appendToAttrs))),
+		grpc.ChainStreamInterceptor(
+			SlogStreamServerInterceptor(
+				WithAppendToAttributes(testFewAppendToAttributes.appendToAttrs),
+				WithInterceptorFilter(InterceptorFilterIgnoreReflection),
+			),
+		),
 	)
 
 	app := &server{}
@@ -382,7 +408,12 @@ func TestServerStreaming(t *testing.T) {
 	conn, err := grpc.NewClient("bufnet",
 		grpc.WithContextDialer(dialer),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithChainStreamInterceptor(SlogStreamClientInterceptor(WithAppendToAttributes(testFewAppendToAttributes.appendToAttrs))),
+		grpc.WithChainStreamInterceptor(
+			SlogStreamClientInterceptor(
+				WithAppendToAttributes(testFewAppendToAttributes.appendToAttrs),
+				WithInterceptorFilter(InterceptorFilterIgnoreReflection),
+			),
+		),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -853,70 +884,67 @@ func TestBidirectionalStreaming(t *testing.T) {
 		t.Error("Expected:", clientExpected, "\nGot:", string(clientJson))
 	}
 
-	//	// Test: Create a stream, send 1 bad then 1 good requests, receive an EOF, close, then get an error
-	//	// Reset the loggers
-	//	serverLogger.Clear()
-	//	clientLogger.Clear()
-	//
-	//	app.Reset()
-	//	app.responseName = []string{""}
-	//	app.responseErr = []error{status.New(codes.InvalidArgument, "missing name").Err()}
-	//	app.maxReceives = 1
-	//
-	//	stream, err = client.ClientStream(clientCtx)
-	//	if err != nil {
-	//		t.Fatal(err)
-	//	}
-	//
-	//	err = stream.Send(&protogen.TestReq{Name: "clientRequest1"})
-	//	if err != nil {
-	//		t.Fatal(err)
-	//	}
-	//	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
-	//
-	//	err = stream.Send(&protogen.TestReq{Name: "clientRequest2"})
-	//	if err != io.EOF {
-	//		t.Fatal("expected EOF")
-	//	}
-	//	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
-	//
-	//	_, err = stream.CloseAndRecv()
-	//	if err == nil {
-	//		t.Fatal("expected an error")
-	//	}
-	//
-	//	serverJson, err = serverLogger.MarshalJSON()
-	//	if err != nil {
-	//		t.Fatal(err)
-	//	}
-	//
-	//	// fmt.Println(string(serverJson))
-	//	serverExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","role":"server","stream_server":false,"stream_client":true}
-	//
-	// {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"server","stream_server":false,"stream_client":true,"desc":{"msg_id":1},"req":{"name":"clientRequest1"}}
-	// {"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"server","stream_server":false,"stream_client":true}
-	// `
-	//
-	//	if string(serverJson) != serverExpected {
-	//		t.Error("Expected:", serverExpected, "\nGot:", string(serverJson))
-	//	}
-	//
-	//	clientJson, err = clientLogger.MarshalJSON()
-	//	if err != nil {
-	//		t.Fatal(err)
-	//	}
-	//
-	//	// fmt.Println(string(clientJson))
-	//	clientExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"client","stream_server":false,"stream_client":true}
-	//
-	// {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"client","stream_server":false,"stream_client":true,"desc":{"msg_id":1},"req":{"name":"clientRequest1"}}
-	// {"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamSend","code_name":"Unknown","code":2,"err":"EOF","role":"client","stream_server":false,"stream_client":true,"desc":{"msg_id":2},"req":{"name":"clientRequest2"}}
-	// {"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"InvalidArgument","code":3,"err":"missing name","role":"client","stream_server":false,"stream_client":true,"resp":{}}
-	// `
-	//
-	//	if string(clientJson) != clientExpected {
-	//		t.Error("Expected:", clientExpected, "\nGot:", string(clientJson))
-	//	}
+	// Test: Create a stream, send good request, server closes
+	// Reset the loggers
+	serverLogger.Clear()
+	clientLogger.Clear()
+
+	app.Reset()
+	app.responseName = []string{}
+	app.responseErr = []error{}
+	app.maxReceives = 0
+
+	stream, err = client.BidirectionalStream(clientCtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = stream.Send(&protogen.TestReq{Name: "clientRequest1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+
+	_, err = stream.Recv()
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+
+	// streams should always be closed after last send
+	err = stream.CloseSend()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	serverJson, err = serverLogger.MarshalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// fmt.Println(string(serverJson))
+	serverExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","role":"server","stream_server":true,"stream_client":true}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":true}
+`
+
+	if string(serverJson) != serverExpected {
+		t.Error("Expected:", serverExpected, "\nGot:", string(serverJson))
+	}
+
+	clientJson, err = clientLogger.MarshalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// fmt.Println(string(clientJson))
+	clientExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true,"desc":{"msg_id":1},"req":{"name":"clientRequest1"}}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamEnd","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
+{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamClientSendClosed","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":true}
+`
+
+	if string(clientJson) != clientExpected {
+		t.Error("Expected:", clientExpected, "\nGot:", string(clientJson))
+	}
 }
 
 var _ protogen.TestServer = &server{}
@@ -1046,4 +1074,8 @@ var testFewAppendToAttributes = disableFields{
 	"grpc_method": {},
 	"peer_host":   {},
 	"peer_port":   {},
+}
+
+func testInterceptorFilter(*otelgrpc.InterceptorInfo) bool {
+	return true
 }

@@ -60,11 +60,10 @@ func parseFullMethod(fullMethodName string) Call {
 	}
 	fullService, method := name[:pos], name[pos+1:]
 
-	pos = strings.LastIndex(fullService, ".")
-	if pos < 0 {
-		pos = 0
+	pkg, service := "", fullService
+	if pos = strings.LastIndex(fullService, "."); pos >= 0 {
+		pkg, service = fullService[:pos], fullService[pos+1:]
 	}
-	pkg, service := fullService[:pos], fullService[pos+1:]
 
 	rval := Call{
 		Package: pkg,
