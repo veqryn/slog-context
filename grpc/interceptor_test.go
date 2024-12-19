@@ -3,7 +3,6 @@ package sloggrpc
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"log/slog"
 	"net"
@@ -189,13 +188,13 @@ func TestClientStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+	time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the server catch up
 
 	err = stream.Send(&protogen.TestReq{Name: "clientRequest2"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+	time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the server catch up
 
 	_, err = stream.CloseAndRecv()
 	if err != nil {
@@ -251,13 +250,13 @@ func TestClientStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+	time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the server catch up
 
 	err = stream.Send(&protogen.TestReq{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+	time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the server catch up
 
 	_, err = stream.CloseAndRecv()
 	if err == nil {
@@ -313,13 +312,13 @@ func TestClientStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+	time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the server catch up
 
 	err = stream.Send(&protogen.TestReq{Name: "clientRequest2"})
 	if err != io.EOF {
 		t.Fatal("expected EOF")
 	}
-	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+	time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the server catch up
 
 	_, err = stream.CloseAndRecv()
 	if err == nil {
@@ -538,7 +537,7 @@ func TestServerStreaming(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Println(string(serverJson))
+	// fmt.Println(string(serverJson))
 	serverExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false,"req":{"name":"clientRequest1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamSend","code_name":"OK","code":0,"role":"server","stream_server":true,"stream_client":false,"desc":{"msg_id":1},"resp":{"name":"serverResponse1"}}
 {"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamSend","code_name":"Unavailable","code":14,"err":"transport is closing","role":"server","stream_server":true,"stream_client":false,"desc":{"msg_id":2},"resp":{"name":"serverResponse2"}}
@@ -553,7 +552,7 @@ func TestServerStreaming(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Println(string(clientJson))
+	// fmt.Println(string(clientJson))
 	clientExpected = `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamStart","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":false,"req":{"name":"clientRequest1"}}
 {"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"rpcStreamRecv","code_name":"OK","code":0,"role":"client","stream_server":true,"stream_client":false,"desc":{"msg_id":1},"resp":{"name":"serverResponse1"}}
 {"time":"2023-09-29T13:00:59Z","level":"WARN","msg":"rpcStreamEnd","code_name":"Canceled","code":1,"err":"grpc: the client connection is closing","role":"client","stream_server":true,"stream_client":false}
@@ -613,7 +612,7 @@ func TestBidirectionalStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+	time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the server catch up
 
 	_, err = stream.Recv()
 	if err != nil {
@@ -624,7 +623,7 @@ func TestBidirectionalStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+	time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the server catch up
 
 	// streams should always be closed after last send
 	err = stream.CloseSend()
@@ -698,7 +697,7 @@ func TestBidirectionalStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+	time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the server catch up
 
 	_, err = stream.Recv()
 	if err != nil {
@@ -709,7 +708,7 @@ func TestBidirectionalStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+	time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the server catch up
 
 	_, err = stream.Recv()
 	if err == nil {
@@ -777,7 +776,7 @@ func TestBidirectionalStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+	time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the server catch up
 
 	_, err = stream.Recv()
 	if err != nil {
@@ -788,14 +787,14 @@ func TestBidirectionalStreaming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the server catch up
+	time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the server catch up
 
 	_, err = stream.Recv()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	time.Sleep(100*time.Millisecond) // Let the server catch up
+	time.Sleep(100 * time.Millisecond) // Let the server catch up
 
 	err = stream.Send(&protogen.TestReq{Name: "clientRequest3"})
 	if err != io.EOF {
@@ -811,7 +810,7 @@ func TestBidirectionalStreaming(t *testing.T) {
 	// Should always keep receiving until error
 	for {
 		_, err = stream.Recv()
-		if err != nil  {
+		if err != nil {
 			break
 		}
 	}
@@ -975,7 +974,7 @@ func (s *server) ServerStream(req *protogen.TestReq, stream grpc.ServerStreaming
 				// fmt.Println(err)
 				return err
 			}
-			time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the client catch up
+			time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the client catch up
 		}
 		if rerr != nil {
 			return rerr
@@ -1004,7 +1003,7 @@ func (s *server) BidirectionalStream(stream grpc.BidiStreamingServer[protogen.Te
 				// fmt.Println(err)
 				return err
 			}
-			time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the client catch up
+			time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the client catch up
 		}
 		if rerr != nil {
 			return rerr
@@ -1019,7 +1018,7 @@ func (s *server) BidirectionalStream(stream grpc.BidiStreamingServer[protogen.Te
 				// fmt.Println(err)
 				return err
 			}
-			time.Sleep(10*time.Millisecond) // GRPC buffers under the hood, so let the client catch up
+			time.Sleep(10 * time.Millisecond) // GRPC buffers under the hood, so let the client catch up
 		}
 		if rerr != nil {
 			return rerr

@@ -119,3 +119,5 @@ func (*recorderSpan) SetName(string) {}
 
 // TracerProvider returns nil.
 func (*recorderSpan) TracerProvider() trace.TracerProvider { return nil }
+
+func (r *recorderSpan) AddLink(link trace.Link) {}
