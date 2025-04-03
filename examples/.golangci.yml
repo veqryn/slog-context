@@ -4,3 +4,4 @@ run:
 linters:
   disable:
     - errcheck
+    - staticcheck

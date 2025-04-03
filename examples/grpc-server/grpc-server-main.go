@@ -42,6 +42,7 @@ func main() {
 		// We will use the sloggrpc.AppendToAttributesAll option, which is fairly verbose with the attributes.
 		// There is also a slimmer sloggrpc.AppendToAttributesDefault, which is what it used if no option is provided.
 		// You can also write your own to customize which attributes are added, or rename their keys.
+		// There are also other options available: WithInterceptorFilter, WithErrorToLevel, and WithLogger
 		grpc.ChainUnaryInterceptor(sloggrpc.SlogUnaryServerInterceptor(sloggrpc.WithAppendToAttributes(sloggrpc.AppendToAttributesAll))),
 		grpc.ChainStreamInterceptor(sloggrpc.SlogStreamServerInterceptor(sloggrpc.WithAppendToAttributes(sloggrpc.AppendToAttributesAll))),
 	)
@@ -129,7 +130,7 @@ func (a Api) ClientStream(stream grpc.ClientStreamingServer[pb.TestReq, pb.TestR
 		}
 	*/
 	var reqNames []string
-	var reqOptions int32
+	var lastReqOption int32
 	for {
 		/*
 			{
@@ -165,12 +166,12 @@ func (a Api) ClientStream(stream grpc.ClientStreamingServer[pb.TestReq, pb.TestR
 			panic(err)
 		}
 		reqNames = append(reqNames, req.Name)
-		reqOptions += req.Option
+		lastReqOption = req.Option
 	}
 
 	return stream.SendAndClose(&pb.TestResp{
 		Name:   "Hello " + strings.Join(reqNames, ", "),
-		Option: reqOptions + 1,
+		Option: lastReqOption + 1,
 	})
 	/*
 		{
@@ -191,7 +192,7 @@ func (a Api) ClientStream(stream grpc.ClientStreamingServer[pb.TestReq, pb.TestR
 		  "ms": 0.113458,
 		  "resp": {
 			"name": "Hello Bob, Bob, Bob",
-			"option": 7
+			"option": 4
 		  }
 		}
 	*/
@@ -221,7 +222,7 @@ func (a Api) ServerStream(req *pb.TestReq, stream grpc.ServerStreamingServer[pb.
 		  }
 		}
 	*/
-	for i := int32(0); i < req.Option; i++ {
+	for i := int32(1); i <= 3; i++ {
 		/*
 			{
 			  "time": "2025-04-03T16:42:07Z",

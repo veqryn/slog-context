@@ -30,6 +30,7 @@ func main() {
 		// We will use the sloggrpc.AppendToAttributesAll option, which is fairly verbose with the attributes.
 		// There is also a slimmer sloggrpc.AppendToAttributesDefault, which is what it used if no option is provided.
 		// You can also write your own to customize which attributes are added, or rename their keys.
+		// There are also other options available: WithInterceptorFilter, WithErrorToLevel, and WithLogger
 		grpc.WithChainUnaryInterceptor(sloggrpc.SlogUnaryClientInterceptor(sloggrpc.WithAppendToAttributes(sloggrpc.AppendToAttributesAll))),
 		grpc.WithChainStreamInterceptor(sloggrpc.SlogStreamClientInterceptor(sloggrpc.WithAppendToAttributes(sloggrpc.AppendToAttributesAll))),
 	)
@@ -177,7 +178,7 @@ func main() {
 		  "ms": 0.427959,
 		  "resp": {
 			"name": "Hello Bob, Bob, Bob",
-			"option": 7
+			"option": 4
 		  }
 		}
 	*/

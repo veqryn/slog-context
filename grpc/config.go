@@ -27,7 +27,7 @@ type AppendToAttributes func(attrs []slog.Attr, attr slog.Attr) []slog.Attr
 // ErrorToLevel defines the mapping between the gRPC return error/code to a log level
 type ErrorToLevel func(err error) slog.Level
 
-// Logger defines the logging function to use for the interceptor (same signature as slog.LogAttrs)
+// Logger defines the logging function to use for the interceptor (same signature as slog.LogAttrs and slogctx.LogAttrs)
 type Logger func(ctx context.Context, level slog.Level, msg string, attrs ...slog.Attr)
 
 // config is a group of options for this instrumentation.

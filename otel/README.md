@@ -22,6 +22,7 @@ an error code if the log is at error level.
 ### Other Great SLOG Utilities
 - [slogctx](https://github.com/veqryn/slog-context): Add attributes to context and have them automatically added to all log lines. Work with a logger stored in context.
 - [slogotel](https://github.com/veqryn/slog-context/tree/main/otel): Automatically extract and add [OpenTelemetry](https://opentelemetry.io/) TraceID's to all log lines.
+- [sloggrpc](https://github.com/veqryn/slog-context/tree/main/grpc): Instrument [GRPC](https://grpc.io/) with automatic logging of all requests and responses.
 - [slogdedup](https://github.com/veqryn/slog-dedup): Middleware that deduplicates and sorts attributes. Particularly useful for JSON logging.
 - [slogbugsnag](https://github.com/veqryn/slog-bugsnag): Middleware that pipes Errors to [Bugsnag](https://www.bugsnag.com/).
 

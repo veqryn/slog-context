@@ -14,7 +14,7 @@ func init() {
 	h := slogctx.NewHandler(
 		slog.NewJSONHandler(os.Stdout, nil), // The next or final handler in the chain
 		&slogctx.HandlerOptions{
-			// Prependers will first add the any sloghttp.With attributes,
+			// Prependers will first add any sloghttp.With attributes,
 			// then anything else Prepended to the ctx
 			Prependers: []slogctx.AttrExtractor{
 				sloghttp.ExtractAttrCollection, // our sloghttp middleware extractor
@@ -82,7 +82,7 @@ func helloUser(w http.ResponseWriter, r *http.Request) {
 	// Add it to our middleware's context
 	id := r.URL.Query().Get("id")
 
-	// sloghttp.With will add the "id" to to the middleware, because it is a
+	// sloghttp.With will add the "id" to the middleware, because it is a
 	// synchronized map. It will show up in all log calls up and down the stack,
 	// until the request sloghttp middleware exits.
 	ctx := sloghttp.With(r.Context(), "id", id)
