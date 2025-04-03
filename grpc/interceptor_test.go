@@ -1082,5 +1082,5 @@ func testInterceptorFilter(*otelgrpc.InterceptorInfo) bool {
 }
 
 func testClientErrorToLevel(err error) slog.Level {
-	return DefaultClientErrorToLevel(err)
+	return ErrorToLevelClientDefault(err)
 }

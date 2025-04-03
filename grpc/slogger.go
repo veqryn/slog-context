@@ -53,7 +53,7 @@ func (c *config) logRequest(ctx context.Context, role Role, call Call, peer Peer
 	attrs := c.appendCommon(make([]slog.Attr, 0, 10), role, call, peer)
 	attrs = c.appendPayload(attrs, "req", req)
 
-	c.log(ctx, slog.LevelInfo, "rpcReq", attrs...)
+	c.Logger(ctx, slog.LevelInfo, "rpcReq", attrs...)
 }
 
 func (c *config) logResponse(ctx context.Context, role Role, call Call, peer Peer, req Payload, resp Payload, result Result) {
@@ -62,7 +62,7 @@ func (c *config) logResponse(ctx context.Context, role Role, call Call, peer Pee
 	attrs = c.appendDurationElapsed(attrs, result.Elapsed)
 	attrs = c.appendPayload(attrs, "resp", resp)
 
-	c.log(ctx, level, "rpcResp", attrs...)
+	c.Logger(ctx, level, "rpcResp", attrs...)
 }
 
 func (c *config) logStreamStart(ctx context.Context, role Role, call Call, peer Peer, req Payload, result Result) {
@@ -70,7 +70,7 @@ func (c *config) logStreamStart(ctx context.Context, role Role, call Call, peer 
 		// No need to log the result code/payload, because if the server has
 		// received the start connection, it will always be good.
 		attrs := c.appendCommon(make([]slog.Attr, 0, 9), role, call, peer)
-		c.log(ctx, slog.LevelInfo, "rpcStreamStart", attrs...)
+		c.Logger(ctx, slog.LevelInfo, "rpcStreamStart", attrs...)
 		return
 	}
 
@@ -82,7 +82,7 @@ func (c *config) logStreamStart(ctx context.Context, role Role, call Call, peer 
 		attrs = c.appendPayload(attrs, "req", req)
 	}
 
-	c.log(ctx, level, "rpcStreamStart", attrs...)
+	c.Logger(ctx, level, "rpcStreamStart", attrs...)
 }
 
 func (c *config) logStreamClientSendClosed(ctx context.Context, role Role, call Call, peer Peer, result Result) {
@@ -97,7 +97,7 @@ func (c *config) logStreamClientSendClosed(ctx context.Context, role Role, call 
 	attrs = c.appendCommon(attrs, role, call, peer)
 	attrs = c.appendDurationElapsed(attrs, result.Elapsed)
 
-	c.log(ctx, level-4, "rpcStreamClientSendClosed", attrs...)
+	c.Logger(ctx, level-4, "rpcStreamClientSendClosed", attrs...)
 }
 
 func (c *config) logStreamEnd(ctx context.Context, role Role, call Call, peer Peer, resp Payload, result Result) {
@@ -108,7 +108,7 @@ func (c *config) logStreamEnd(ctx context.Context, role Role, call Call, peer Pe
 		attrs = c.appendPayload(attrs, "resp", resp)
 	}
 
-	c.log(ctx, level, "rpcStreamEnd", attrs...)
+	c.Logger(ctx, level, "rpcStreamEnd", attrs...)
 }
 
 func (c *config) logStreamSend(ctx context.Context, role Role, call Call, streamInfo StreamInfo, peer Peer, req Payload, result Result) {
@@ -123,7 +123,7 @@ func (c *config) logStreamSend(ctx context.Context, role Role, call Call, stream
 	}
 	attrs = c.appendPayload(attrs, key, req)
 
-	c.log(ctx, level, "rpcStreamSend", attrs...)
+	c.Logger(ctx, level, "rpcStreamSend", attrs...)
 }
 
 func (c *config) logStreamRecv(ctx context.Context, role Role, call Call, streamInfo StreamInfo, peer Peer, resp Payload, result Result) {
@@ -138,5 +138,5 @@ func (c *config) logStreamRecv(ctx context.Context, role Role, call Call, stream
 	}
 	attrs = c.appendPayload(attrs, key, resp)
 
-	c.log(ctx, level, "rpcStreamRecv", attrs...)
+	c.Logger(ctx, level, "rpcStreamRecv", attrs...)
 }

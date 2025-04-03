@@ -41,5 +41,4 @@ func JsonPB(m proto.Message) any {
 
 // TODO: have a way to truncate a protobuf message but keep it valid json
 // TODO: have a way to not log the protobuf message resp, or req, separately, and maybe only on some calls. maybe log each field as its own attribute to enable this.
-// TODO: have a way to replace the log functions
-// TODO: have a way to redact the protobuf messages during json marshalling (the builtin debug_redact flag?)
+// TODO: have a way to redact the protobuf messages during json marshalling (the builtin debug_redact flag? a protobuf extension that allowlists fields?)

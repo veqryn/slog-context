@@ -27,13 +27,16 @@ type AppendToAttributes func(attrs []slog.Attr, attr slog.Attr) []slog.Attr
 // ErrorToLevel defines the mapping between the gRPC return error/code to a log level
 type ErrorToLevel func(err error) slog.Level
 
+// Logger defines the logging function to use for the interceptor (same signature as slog.LogAttrs)
+type Logger func(ctx context.Context, level slog.Level, msg string, attrs ...slog.Attr)
+
 // config is a group of options for this instrumentation.
 type config struct {
 	InterceptorFilter  InterceptorFilter
 	AppendToAttributes AppendToAttributes
 	ErrorToLevel       ErrorToLevel
 	role               string
-	log                func(ctx context.Context, level slog.Level, msg string, attrs ...slog.Attr)
+	Logger             Logger
 }
 
 // Option applies an option value for a config.
@@ -44,14 +47,14 @@ type Option interface {
 // newConfig returns a config configured with all the passed Options.
 func newConfig(opts []Option, role string) *config {
 	c := &config{
-		AppendToAttributes: defaultAppendToAttributes.appendToAttrs, // TODO: make into an option
+		AppendToAttributes: AppendToAttributesDefault,
+		Logger:             LoggerDefault,
 		role:               role,
-		log:                slogctx.LogAttrs, // TODO: make into an option
 	}
 	if role == "client" {
-		c.ErrorToLevel = DefaultClientErrorToLevel
+		c.ErrorToLevel = ErrorToLevelClientDefault
 	} else {
-		c.ErrorToLevel = DefaultServerErrorToLevel
+		c.ErrorToLevel = ErrorToLevelServerDefault
 	}
 
 	for _, o := range opts {
@@ -60,8 +63,8 @@ func newConfig(opts []Option, role string) *config {
 	return c
 }
 
-// DefaultServerErrorToLevel is the helper mapper that maps gRPC return errors/codes to log levels for server side.
-func DefaultServerErrorToLevel(err error) slog.Level {
+// ErrorToLevelServerDefault is the helper mapper that maps gRPC return errors/codes to log levels for server side.
+func ErrorToLevelServerDefault(err error) slog.Level {
 	if err == nil {
 		return slog.LevelInfo
 	}
@@ -86,8 +89,8 @@ func DefaultServerErrorToLevel(err error) slog.Level {
 	}
 }
 
-// DefaultClientErrorToLevel is the helper mapper that maps gRPC return errors/codes to log levels for client side.
-func DefaultClientErrorToLevel(err error) slog.Level {
+// ErrorToLevelClientDefault is the helper mapper that maps gRPC return errors/codes to log levels for client side.
+func ErrorToLevelClientDefault(err error) slog.Level {
 	if err == nil {
 		return slog.LevelInfo
 	}
@@ -112,13 +115,19 @@ func DefaultClientErrorToLevel(err error) slog.Level {
 	}
 }
 
-var defaultAppendToAttributes = disableFields{
+// AppendToAttributesAll allows all attributes
+var AppendToAttributesAll AppendToAttributes = func(attrs []slog.Attr, attr slog.Attr) []slog.Attr {
+	return append(attrs, attr)
+}
+
+// AppendToAttributesDefault allows the default attributes
+var AppendToAttributesDefault AppendToAttributes = disableFields{
 	"grpc_pkg":      {},
 	"grpc_system":   {},
 	"role":          {},
 	"stream_server": {},
 	"stream_client": {},
-}
+}.appendToAttrs
 
 type disableFields map[string]struct{}
 
@@ -190,4 +199,22 @@ func FullMethod(ii *otelgrpc.InterceptorInfo) string {
 		return ii.StreamServerInfo.FullMethod
 	}
 	return ii.Method
+}
+
+// LoggerDefault returns slogctx.LogAttrs as the default Logger function
+var LoggerDefault Logger = slogctx.LogAttrs
+
+// WithLogger returns an Option to use the logger function
+func WithLogger(f Logger) Option {
+	return interceptorLoggerOption{f: f}
+}
+
+type interceptorLoggerOption struct {
+	f Logger
+}
+
+func (o interceptorLoggerOption) apply(c *config) {
+	if o.f != nil {
+		c.Logger = o.f
+	}
 }
