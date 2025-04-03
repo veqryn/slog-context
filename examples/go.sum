@@ -17,6 +17,8 @@ github.com/veqryn/slog-context v0.7.1-0.20241218103158-8ae5ba86789d h1:7Tp58OXJy
 github.com/veqryn/slog-context v0.7.1-0.20241218103158-8ae5ba86789d/go.mod h1:8rsT72p0kzzN9lmkwtabIhxg7ZkpnKblt9x3Eix8Tc0=
 github.com/veqryn/slog-context/grpc v0.0.0-20241219101339-dbb05825a196 h1:2b/vTBtICtIzIyaloQJSnFdCwnidJKPZgBda+ZIoh6Q=
 github.com/veqryn/slog-context/grpc v0.0.0-20241219101339-dbb05825a196/go.mod h1:oQMaM3XJUidd9ulDXDbEuPazvG6ZPNu4/rdd5axs5MA=
+github.com/veqryn/slog-context/grpc v0.0.0-20250403223624-741adda26cd1 h1:BmKQd5bPUlV47fNZP0hEqkYHoGPP3A1T7A/wAkSTGeo=
+github.com/veqryn/slog-context/grpc v0.0.0-20250403223624-741adda26cd1/go.mod h1:oQMaM3XJUidd9ulDXDbEuPazvG6ZPNu4/rdd5axs5MA=
 github.com/veqryn/slog-context/otel v0.7.0 h1:7JptnwF5XyEVSygzilp/LqRmjSymqGBgFcKG5MZLvnU=
 github.com/veqryn/slog-context/otel v0.7.0/go.mod h1:Zqag1kf9g8K5ZPIJjgLYwqtWCaEPzXXZEzgguvxPCws=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 h1:r6I7RJCN86bpD/FQwedZ0vSixDpwuWREjW9oRMsmqDc=

@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/veqryn/slog-context v0.7.1-0.20241218103158-8ae5ba86789d
-	github.com/veqryn/slog-context/grpc v0.0.0-20241219101339-dbb05825a196
+	github.com/veqryn/slog-context/grpc v0.0.0-20250403223624-741adda26cd1
 	github.com/veqryn/slog-context/otel v0.7.0
 	go.opentelemetry.io/otel v1.29.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.29.0
