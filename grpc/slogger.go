@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"time"
 
-	slogctx "github.com/veqryn/slog-context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -71,7 +70,7 @@ func (c *config) logStreamStart(ctx context.Context, role Role, call Call, peer 
 		// No need to log the result code/payload, because if the server has
 		// received the start connection, it will always be good.
 		attrs := c.appendCommon(make([]slog.Attr, 0, 9), role, call, peer)
-		slogctx.LogAttrs(ctx, slog.LevelInfo, "rpcStreamStart", attrs...)
+		c.log(ctx, slog.LevelInfo, "rpcStreamStart", attrs...)
 		return
 	}
 

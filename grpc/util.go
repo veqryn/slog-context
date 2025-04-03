@@ -8,7 +8,13 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func ReplaceAttrJsonPB(group []string, a slog.Attr) slog.Attr {
+// ReplaceAttrJsonPB is a slog.HandlerOptions.ReplaceAttr that marshals the
+// all protobuf messages found as slog.Attr values, using the official protojson
+// marshaller.
+// This ends up creating log lines with significantly more readable protobuf
+// messages, because protojson knows how to turn protobuf messages into json,
+// while the standard library json marshaller does not.
+func ReplaceAttrJsonPB(_ []string, a slog.Attr) slog.Attr {
 	// Specifically use protobuf->json defined by the protobuf spec
 	// for any protobuf messages.
 	if a.Value.Kind() == slog.KindAny {
@@ -36,4 +42,4 @@ func JsonPB(m proto.Message) any {
 // TODO: have a way to truncate a protobuf message but keep it valid json
 // TODO: have a way to not log the protobuf message resp, or req, separately, and maybe only on some calls. maybe log each field as its own attribute to enable this.
 // TODO: have a way to replace the log functions
-// TODO: tests
+// TODO: have a way to redact the protobuf messages during json marshalling (the builtin debug_redact flag?)

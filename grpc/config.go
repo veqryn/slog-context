@@ -100,10 +100,13 @@ func DefaultClientErrorToLevel(err error) slog.Level {
 	case codes.OK, codes.Canceled, codes.InvalidArgument, codes.NotFound, codes.AlreadyExists, codes.ResourceExhausted,
 		codes.FailedPrecondition, codes.Aborted, codes.OutOfRange:
 		return slog.LevelInfo
+
 	case codes.Unknown, codes.DeadlineExceeded, codes.PermissionDenied, codes.Unauthenticated:
 		return slog.LevelWarn
+
 	case codes.Unimplemented, codes.Internal, codes.Unavailable, codes.DataLoss:
 		return slog.LevelWarn // Maybe make this error level?
+
 	default:
 		return slog.LevelWarn
 	}
