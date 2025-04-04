@@ -15,10 +15,10 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/veqryn/slog-context v0.8.0 h1:lDhwAgjwx52K5StqqQzi5d0Y/F4SNyGZbsXGd8MtucM=
 github.com/veqryn/slog-context v0.8.0/go.mod h1:8rsT72p0kzzN9lmkwtabIhxg7ZkpnKblt9x3Eix8Tc0=
-github.com/veqryn/slog-context/grpc v0.0.0-20250403223624-741adda26cd1 h1:BmKQd5bPUlV47fNZP0hEqkYHoGPP3A1T7A/wAkSTGeo=
-github.com/veqryn/slog-context/grpc v0.0.0-20250403223624-741adda26cd1/go.mod h1:oQMaM3XJUidd9ulDXDbEuPazvG6ZPNu4/rdd5axs5MA=
-github.com/veqryn/slog-context/otel v0.7.0 h1:7JptnwF5XyEVSygzilp/LqRmjSymqGBgFcKG5MZLvnU=
-github.com/veqryn/slog-context/otel v0.7.0/go.mod h1:Zqag1kf9g8K5ZPIJjgLYwqtWCaEPzXXZEzgguvxPCws=
+github.com/veqryn/slog-context/grpc v0.8.0 h1:F5dQm3MEd/8A6BO9oJfCOFFAj7pwJTHwLL9kugXc94Q=
+github.com/veqryn/slog-context/grpc v0.8.0/go.mod h1:DdFJ1cCXz2nCxcAgFjOSOE+zfvZAd5biVpAGz6H5et0=
+github.com/veqryn/slog-context/otel v0.8.0 h1:tuMAAb/aXImUBTXz+RmNkTu6eBdzZAde8cZM/UL0HdI=
+github.com/veqryn/slog-context/otel v0.8.0/go.mod h1:CHln1I9F42pK+GvLKMiH/QzIdzTf2n3R0pkHa9+vYzQ=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 h1:r6I7RJCN86bpD/FQwedZ0vSixDpwuWREjW9oRMsmqDc=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0/go.mod h1:B9yO6b04uB80CzjedvewuqDhxJxi11s7/GtiGa8bAjI=
 go.opentelemetry.io/otel v1.29.0 h1:PdomN/Al4q/lN6iBJEN3AwPvUiHPMlt93c8bqTG5Llw=
