@@ -1,0 +1,25 @@
+syntax = "proto3";
+// https://protobuf.dev/programming-guides/proto3/
+// https://grpc-ecosystem.github.io/grpc-gateway/
+// https://github.com/googleapis/googleapis/blob/master/google/api/http.proto
+
+package com.github.veqryn.slogcontext.grpc.test;
+option go_package = "github.com/veqryn/slog-context/grpc/test/protogen";
+
+// The HuntApp gRPC services.
+service Test {
+  rpc Unary (TestReq) returns (TestResp) {}
+  rpc ClientStream (stream TestReq) returns (TestResp) {}
+  rpc ServerStream (TestReq) returns (stream TestResp) {}
+  rpc BidirectionalStream (stream TestReq) returns (stream TestResp) {}
+}
+
+message TestReq {
+  string name = 1;
+  int32 option = 2;
+}
+
+message TestResp {
+  string name = 1;
+  int32 option = 2;
+}

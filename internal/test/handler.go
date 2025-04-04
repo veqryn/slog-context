@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"log/slog"
+	"sync"
 	"time"
 )
 
@@ -13,6 +14,7 @@ var DefaultTime = time.Date(2023, 9, 29, 13, 0, 59, 0, time.UTC)
 
 // Handler is a slog.Handler that records the records that come its way
 type Handler struct {
+	mu      sync.Mutex
 	Records []slog.Record
 	Ctxs    []context.Context
 	Source  bool
@@ -25,6 +27,8 @@ func (h *Handler) Enabled(_ context.Context, lvl slog.Level) bool {
 
 // Handle records a log record
 func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	r.Time = DefaultTime
 	h.Records = append(h.Records, r)
 	h.Ctxs = append(h.Ctxs, ctx)
@@ -43,6 +47,8 @@ func (h *Handler) WithAttrs([]slog.Attr) slog.Handler {
 
 // String formats all log records with slog.TextHandler
 func (h *Handler) String() string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	buf := &bytes.Buffer{}
 	formatter := slog.NewTextHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: h.Source})
 	for _, record := range h.Records {
@@ -56,6 +62,8 @@ func (h *Handler) String() string {
 
 // MarshalJSON formats all log records with slog.JSONHandler
 func (h *Handler) MarshalJSON() ([]byte, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	buf := &bytes.Buffer{}
 	formatter := slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug, AddSource: h.Source})
 	for _, record := range h.Records {
@@ -65,4 +73,12 @@ func (h *Handler) MarshalJSON() ([]byte, error) {
 		}
 	}
 	return buf.Bytes(), nil
+}
+
+// Clear deletes all existing records and contexts
+func (h *Handler) Clear() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.Records = nil
+	h.Ctxs = nil
 }

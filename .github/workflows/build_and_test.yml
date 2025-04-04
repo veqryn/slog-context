@@ -20,8 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.21', '1.22' ]
-        go-module: [ '.', './otel', './examples']
+        go-version: [ '1.21', '1.22', '1.23', '1.24' ]
+        go-module: [ '.', './otel', './examples', './grpc' ]
 
     defaults:
       run:
@@ -39,9 +39,7 @@ jobs:
         run: go version
 
       - name: Install dependencies ${{ matrix.go-version }} ${{ matrix.go-module }}
-        run: |
-          go get -t -u golang.org/x/tools/cmd/cover
-          go mod download
+        run: go mod download
 
       - name: Build ${{ matrix.go-version }} ${{ matrix.go-module }}
         run: go build -v ./...
@@ -54,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.21', '1.22' ]
+        go-version: [ '1.21', '1.22', '1.23', '1.24' ]
 
     steps:
       - uses: actions/checkout@v4
@@ -72,17 +70,16 @@ jobs:
           go work init .
           go work use ./examples
           go work use ./otel
+          go work use ./grpc
 
       - name: Install dependencies ${{ matrix.go-version }}
-        run: |
-          go get -t -u golang.org/x/tools/cmd/cover
-          go mod download
+        run: go mod download
 
       - name: Build ${{ matrix.go-version }}
-        run: go build -v ./... ./otel/... ./examples/...
+        run: go build -v ./... ./otel/... ./examples/... ./grpc/...
 
       - name: Test ${{ matrix.go-version }}
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./... ./otel/... ./examples/...
+        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./... ./otel/... ./examples/... ./grpc/...
 
       - name: Upload coverage reports to Codecov ${{ matrix.go-version }}
         uses: codecov/codecov-action@v3
