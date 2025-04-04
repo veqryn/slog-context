@@ -3,7 +3,7 @@ module github.com/veqryn/slog-context/grpc
 go 1.21
 
 require (
-	github.com/veqryn/slog-context v0.7.1-0.20241218103158-8ae5ba86789d
+	github.com/veqryn/slog-context v0.8.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0
 	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.2
