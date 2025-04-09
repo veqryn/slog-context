@@ -577,6 +577,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net"
@@ -587,6 +588,7 @@ import (
 	sloggrpc "github.com/veqryn/slog-context/grpc"
 	pb "github.com/veqryn/slog-context/grpc/test/gen"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func init() {
@@ -597,7 +599,8 @@ func init() {
 
 func main() {
 	ctx := context.TODO()
-	slog.Info("Starting server. Please run: grpcurl localhost:8080/hello") // TODO: fix
+	slog.Info("Starting server...")
+	fmt.Println(`Please run: grpcurl -plaintext -d '{"name":"Bob", "option":1}' localhost:8000 com.github.veqryn.slogcontext.grpc.test.Test/Unary`)
 
 	// Create api app
 	app := &Api{}
@@ -616,11 +619,17 @@ func main() {
 		// We will use the sloggrpc.AppendToAttributesAll option, which is fairly verbose with the attributes.
 		// There is also a slimmer sloggrpc.AppendToAttributesDefault, which is what it used if no option is provided.
 		// You can also write your own to customize which attributes are added, or rename their keys.
-		// There are also other options available: WithInterceptorFilter, WithErrorToLevel, and WithLogger
-		grpc.ChainUnaryInterceptor(sloggrpc.SlogUnaryServerInterceptor(sloggrpc.WithAppendToAttributes(sloggrpc.AppendToAttributesAll))),
-		grpc.ChainStreamInterceptor(sloggrpc.SlogStreamServerInterceptor(sloggrpc.WithAppendToAttributes(sloggrpc.AppendToAttributesAll))),
+		// There are also other options available: WithErrorToLevel, and WithLogger
+		grpc.ChainUnaryInterceptor(sloggrpc.SlogUnaryServerInterceptor(
+			sloggrpc.WithAppendToAttributes(sloggrpc.AppendToAttributesAll),
+			sloggrpc.WithInterceptorFilter(sloggrpc.InterceptorFilterIgnoreReflection))),
+
+		grpc.ChainStreamInterceptor(sloggrpc.SlogStreamServerInterceptor(
+			sloggrpc.WithAppendToAttributes(sloggrpc.AppendToAttributesAll),
+			sloggrpc.WithInterceptorFilter(sloggrpc.InterceptorFilterIgnoreReflection))),
 	)
 	pb.RegisterTestServer(grpcServer, app)
+	reflection.Register(grpcServer)
 
 	// Start gRPC server
 	serveErr := grpcServer.Serve(lis)
