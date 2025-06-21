@@ -38,7 +38,7 @@ func ExampleAttrCollection() {
 		ctx := sloghttp.With(r.Context(), "id", id)
 
 		// Log some things. Should also have both "path", "id"
-		slogctx.Info(ctx, "saying hello...")
+		slog.InfoContext(ctx, "saying hello...")
 		_, _ = w.Write([]byte("Hello User #" + id))
 	}
 
@@ -59,7 +59,7 @@ func ExampleAttrCollection() {
 			// things such as the response status code, body, etc.
 			// Should also have both "path" and "id", but not "foo".
 			// Having "id" included in the log is the whole point of this package!
-			slogctx.Info(r.Context(), "Response", "method", r.Method)
+			slog.InfoContext(r.Context(), "Response", "method", r.Method)
 			/*
 				{
 					"time": "2024-04-01T00:06:11Z",

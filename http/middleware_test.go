@@ -27,12 +27,13 @@ func TestAttrCollection(t *testing.T) {
 	)
 	// Using slog.SetDefault in tests can be problematic,
 	// as the steps run in parallel and step on each other
-	ctx := slogctx.NewCtx(context.Background(), slog.New(h))
+	l := slog.New(h)
+	ctx := context.Background()
 
 	// Setup with our sloghttp middleware, a logging middleware, then our endpoint
 	httpHandler := AttrCollection(
-		httpLoggingMiddleware(
-			http.HandlerFunc(helloUser),
+		httpLoggingMiddleware(l)(
+			http.HandlerFunc(helloUser(l)),
 		),
 	)
 
@@ -79,39 +80,43 @@ func TestAttrCollection(t *testing.T) {
 // things like the response code, request body, response body, url, method, etc.
 // It doesn't have access to any of the new context's created within the next handler.
 // But it should still log with any of the attributes added to our sloghttp.Middleware.
-func httpLoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Add some logging context/baggage before the handler
-		r = r.WithContext(With(r.Context(), "path", r.URL.Path))
+func httpLoggingMiddleware(l *slog.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Add some logging context/baggage before the handler
+			r = r.WithContext(With(r.Context(), "path", r.URL.Path))
 
-		// Call the next handler
-		next.ServeHTTP(w, r)
+			// Call the next handler
+			next.ServeHTTP(w, r)
 
-		// Log out that we had a response
-		slogctx.Info(r.Context(), "Response", "method", r.Method) // should also have both "path" and "id", but not "foo"
-	})
+			// Log out that we had a response
+			l.InfoContext(r.Context(), "Response", "method", r.Method) // should also have both "path" and "id", but not "foo"
+		})
+	}
 }
 
 // This is a stand-in for an api endpoint
-func helloUser(w http.ResponseWriter, r *http.Request) {
-	// Stand-in for a User ID.
-	// Add it to our middleware's map
-	id := r.URL.Query().Get("id")
+func helloUser(l *slog.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Stand-in for a User ID.
+		// Add it to our middleware's map
+		id := r.URL.Query().Get("id")
 
-	// sloghttp.With will add "id" to to the middleware, because it is a synchronized map.
-	// It will show up in all log calls up and down the stack, until the request sloghttp middleware exits.
-	ctx := With(r.Context(), "id", id)
+		// sloghttp.With will add "id" to to the middleware, because it is a synchronized map.
+		// It will show up in all log calls up and down the stack, until the request sloghttp middleware exits.
+		ctx := With(r.Context(), "id", id)
 
-	// slogctx.With will add "foo" only to the Returned context, which will limits its scope
-	// to the rest of this function and any sub-functions called.
-	// The callers of helloUser and all the middlewares will not see "foo".
-	ctx = slogctx.With(ctx, "foo", "bar")
+		// "foo" only to the Returned context, which will limits its scope
+		// to the rest of this function and any sub-functions called.
+		// The callers of helloUser and all the middlewares will not see "foo".
+		ctx = slogctx.Append(ctx, slog.String("foo", "bar")) // also works
 
-	// Log some things
-	slogctx.Info(ctx, "saying hello...") // should also have both "path", "id", and "foo"
+		// Log some things
+		l.InfoContext(ctx, "saying hello...") // should also have both "path", "id", and "foo"
 
-	// Respond
-	_, _ = w.Write([]byte("Hello User #" + id))
+		// Respond
+		_, _ = w.Write([]byte("Hello User #" + id))
+	}
 }
 
 func TestOutsideRequest(t *testing.T) {
@@ -126,12 +131,13 @@ func TestOutsideRequest(t *testing.T) {
 			},
 		},
 	)
-	ctx := slogctx.NewCtx(context.Background(), slog.New(h))
+	ctx := context.Background()
+	l := slog.New(h)
 
 	ctx = With(ctx, "id", "13579")
 	ctx = With(ctx) // Should be ignored
 
-	slogctx.Info(ctx, "utility method") // should also have "id"
+	l.InfoContext(ctx, "utility method") // should also have "id"
 
 	jsn, err := tester.MarshalJSON()
 	if err != nil {

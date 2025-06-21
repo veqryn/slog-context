@@ -55,7 +55,7 @@ func With(ctx context.Context, args ...any) context.Context {
 		// and outside of requests, the most useful thing to do is to return the
 		// context with the attributes added. That way the attributes will still
 		// end up on log lines using this context, which is the goal in both cases.
-		return slogctx.With(ctx, args...)
+		return slogctx.Prepend(ctx, args...)
 	}
 
 	m.mu.Lock()
