@@ -12,19 +12,6 @@ import (
 // attributes.
 type AttrExtractor func(ctx context.Context, recordT time.Time, recordLvl slog.Level, recordMsg string) []slog.Attr
 
-// HandlerOptions are options for a Handler
-type HandlerOptions struct {
-	// A list of functions to be called, each of which will return attributes
-	// that should be prepended to the start of every log line with this context.
-	// If left nil, the default ExtractPrepended function will be used only.
-	Prependers []AttrExtractor
-
-	// A list of functions to be called, each of which will return attributes
-	// that should be appended to the end of every log line with this context.
-	// If left nil, the default ExtractAppended function will be used only.
-	Appenders []AttrExtractor
-}
-
 // Handler is a slog.Handler middleware that will Prepend and
 // Append attributes to log lines. The attributes are extracted out of the log
 // record's context by the provided AttrExtractor methods.
@@ -33,7 +20,6 @@ type Handler struct {
 	next       slog.Handler
 	goa        *groupOrAttrs
 	prependers []AttrExtractor
-	appenders  []AttrExtractor
 }
 
 var _ slog.Handler = &Handler{} // Assert conformance with interface
@@ -43,15 +29,14 @@ var _ slog.Handler = &Handler{} // Assert conformance with interface
 // It can be used with slogmulti methods such as Pipe to easily setup a pipeline of slog handlers:
 //
 //	slog.SetDefault(slog.New(slogmulti.
-//		Pipe(slogctx.NewMiddleware(&slogctx.HandlerOptions{})).
+//		Pipe(slogctx.NewMiddleware()).
 //		Pipe(slogdedup.NewOverwriteMiddleware(&slogdedup.OverwriteHandlerOptions{})).
-//		Handler(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{})),
+//		Handler(slog.NewJSONHandler(os.Stdout)),
 //	))
-func NewMiddleware(options *HandlerOptions) func(slog.Handler) slog.Handler {
+func NewMiddleware() func(slog.Handler) slog.Handler {
 	return func(next slog.Handler) slog.Handler {
 		return NewHandler(
 			next,
-			options,
 		)
 	}
 }
@@ -61,21 +46,16 @@ func NewMiddleware(options *HandlerOptions) func(slog.Handler) slog.Handler {
 // record's context by the provided AttrExtractor methods.
 // It passes the final record and attributes off to the next handler when finished.
 // If opts is nil, the default options are used.
-func NewHandler(next slog.Handler, opts *HandlerOptions) *Handler {
-	if opts == nil {
-		opts = &HandlerOptions{}
-	}
-	if opts.Prependers == nil {
-		opts.Prependers = []AttrExtractor{ExtractPrepended}
-	}
-	if opts.Appenders == nil {
-		opts.Appenders = []AttrExtractor{ExtractAppended}
+func NewHandler(next slog.Handler) *Handler {
+
+	prependers := []AttrExtractor{
+		extractAttrCollection,
+		extractPrepended,
 	}
 
 	return &Handler{
 		next:       next,
-		prependers: slices.Clone(opts.Prependers),
-		appenders:  slices.Clone(opts.Appenders),
+		prependers: prependers,
 	}
 }
 
@@ -94,11 +74,6 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		finalAttrs = append(finalAttrs, a)
 		return true
 	})
-
-	// Add our 'appended' context attributes to the end
-	for _, f := range h.appenders {
-		finalAttrs = append(finalAttrs, f(ctx, r.Time, r.Level, r.Message)...)
-	}
 
 	// Iterate through the goa (group Or Attributes) linked list, which is ordered from newest to oldest
 	for g := h.goa; g != nil; g = g.next {

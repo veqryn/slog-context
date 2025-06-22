@@ -1,4 +1,4 @@
-package sloghttp
+package slogctx
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	slogctx "github.com/veqryn/slog-context"
 	"github.com/veqryn/slog-context/internal/attr"
 )
 
@@ -55,7 +54,7 @@ func With(ctx context.Context, args ...any) context.Context {
 		// and outside of requests, the most useful thing to do is to return the
 		// context with the attributes added. That way the attributes will still
 		// end up on log lines using this context, which is the goal in both cases.
-		return slogctx.Prepend(ctx, args...)
+		return Prepend(ctx, args...)
 	}
 
 	m.mu.Lock()
@@ -73,11 +72,11 @@ func With(ctx context.Context, args ...any) context.Context {
 	return ctx
 }
 
-// ExtractAttrCollection is a slogctx Extractor that must be used with a
+// extractAttrCollection is a slogctx Extractor that must be used with a
 // slogctx.Handler (via slogctx.HandlerOptions) as Prependers or Appenders.
 // It will cause the Handler to add the Attributes added by sloghttp.With to all
 // log lines using that same context.
-func ExtractAttrCollection(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
+func extractAttrCollection(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
 	m := fromCtx(ctx)
 	if m == nil {
 		return nil

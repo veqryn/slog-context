@@ -1,4 +1,4 @@
-package sloghttp
+package slogctx
 
 import (
 	"context"
@@ -9,21 +9,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	slogctx "github.com/veqryn/slog-context"
 	"github.com/veqryn/slog-context/internal/test"
 )
 
 func TestAttrCollection(t *testing.T) {
 	// Create the *slogctx.Handler middleware
 	tester := &test.Handler{}
-	h := slogctx.NewHandler(
+	h := NewHandler(
 		tester,
-		&slogctx.HandlerOptions{
-			Prependers: []slogctx.AttrExtractor{
-				ExtractAttrCollection,    // our sloghttp middleware extractor
-				slogctx.ExtractPrepended, // for all other prepended attributes
-			},
-		},
 	)
 	// Using slog.SetDefault in tests can be problematic,
 	// as the steps run in parallel and step on each other
@@ -109,7 +102,7 @@ func helloUser(l *slog.Logger) http.HandlerFunc {
 		// "foo" only to the Returned context, which will limits its scope
 		// to the rest of this function and any sub-functions called.
 		// The callers of helloUser and all the middlewares will not see "foo".
-		ctx = slogctx.Append(ctx, slog.String("foo", "bar")) // also works
+		ctx = Prepend(ctx, slog.String("foo", "bar")) // also works
 
 		// Log some things
 		l.InfoContext(ctx, "saying hello...") // should also have both "path", "id", and "foo"
@@ -122,14 +115,8 @@ func helloUser(l *slog.Logger) http.HandlerFunc {
 func TestOutsideRequest(t *testing.T) {
 	// Create the *slogctx.Handler middleware
 	tester := &test.Handler{}
-	h := slogctx.NewHandler(
+	h := NewHandler(
 		tester,
-		&slogctx.HandlerOptions{
-			Prependers: []slogctx.AttrExtractor{
-				ExtractAttrCollection,    // our sloghttp middleware extractor
-				slogctx.ExtractPrepended, // for all other prepended attributes
-			},
-		},
 	)
 	ctx := context.Background()
 	l := slog.New(h)

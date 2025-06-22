@@ -1,4 +1,4 @@
-package sloghttp_test
+package slogctx_test
 
 import (
 	"log/slog"
@@ -6,21 +6,12 @@ import (
 	"os"
 
 	slogctx "github.com/veqryn/slog-context"
-	sloghttp "github.com/veqryn/slog-context/http"
 )
 
 func ExampleExtractAttrCollection() {
 	// Create the *slogctx.Handler middleware
 	h := slogctx.NewHandler(
 		slog.NewJSONHandler(os.Stdout, nil), // The next or final handler in the chain
-		&slogctx.HandlerOptions{
-			// Prependers will first add the any sloghttp.With attributes,
-			// then anything else Prepended to the ctx
-			Prependers: []slogctx.AttrExtractor{
-				sloghttp.ExtractAttrCollection, // our sloghttp middleware extractor
-				slogctx.ExtractPrepended,       // for all other prepended attributes
-			},
-		},
 	)
 	slog.SetDefault(slog.New(h))
 }
@@ -35,7 +26,7 @@ func ExampleAttrCollection() {
 		// sloghttp.With will add the "id" to to the middleware, because it is a
 		// synchronized map. It will show up in all log calls up and down the stack,
 		// until the request sloghttp middleware exits.
-		ctx := sloghttp.With(r.Context(), "id", id)
+		ctx := slogctx.With(r.Context(), "id", id)
 
 		// Log some things. Should also have both "path", "id"
 		slog.InfoContext(ctx, "saying hello...")
@@ -50,7 +41,7 @@ func ExampleAttrCollection() {
 	httpLoggingMiddleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Add some logging context/baggage before the handler
-			r = r.WithContext(sloghttp.With(r.Context(), "path", r.URL.Path))
+			r = r.WithContext(slogctx.With(r.Context(), "path", r.URL.Path))
 
 			// Call the next handler
 			next.ServeHTTP(w, r)
@@ -75,7 +66,7 @@ func ExampleAttrCollection() {
 
 	// Wrap our final handler inside our middlewares.
 	// AttrCollector -> Request Logging -> Final Endpoint Handler (helloUser)
-	handler := sloghttp.AttrCollection(
+	handler := slogctx.AttrCollection(
 		httpLoggingMiddleware(
 			http.HandlerFunc(helloUserHandler),
 		),

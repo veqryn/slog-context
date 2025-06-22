@@ -27,18 +27,13 @@ func ExampleNewHandler() {
 	// that context.
 
 	// Create the *slogctx.Handler middleware
-	h := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
+	h := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(slog.New(h))
 
 	ctx := context.Background()
 
 	// Prepend some slog attributes to the start of future log lines:
 	ctx = slogctx.Prepend(ctx, "prependKey", "prependValue")
-
-	// Append some slog attributes to the end of future log lines:
-	// Prepend and Append have the same args signature as slog methods,
-	// and can take a mix of slog.Attr and key-value pairs.
-	ctx = slogctx.Append(ctx, slog.String("appendKey", "appendValue"))
 
 	// Use the logger like normal:
 	slog.WarnContext(ctx, "main message", "mainKey", "mainValue")

@@ -13,7 +13,7 @@ import (
 
 func TestSlogtest(t *testing.T) {
 	var buf bytes.Buffer
-	h := slogctx.NewHandler(slog.NewJSONHandler(&buf, nil), nil)
+	h := slogctx.NewHandler(slog.NewJSONHandler(&buf, nil))
 
 	results := func() []map[string]any {
 		ms, err := parseLines(buf.Bytes(), parseJSON)
