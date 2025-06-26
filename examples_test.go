@@ -33,7 +33,7 @@ func ExampleNewHandler() {
 	ctx := context.Background()
 
 	// Prepend some slog attributes to the start of future log lines:
-	ctx = slogctx.Prepend(ctx, "prependKey", "prependValue")
+	ctx = slogctx.Add(ctx, "prependKey", "prependValue")
 
 	// Use the logger like normal:
 	slog.WarnContext(ctx, "main message", "mainKey", "mainValue")

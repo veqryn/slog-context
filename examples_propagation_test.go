@@ -26,7 +26,7 @@ func ExampleAttrCollection() {
 		// sloghttp.With will add the "id" to to the middleware, because it is a
 		// synchronized map. It will show up in all log calls up and down the stack,
 		// until the request sloghttp middleware exits.
-		ctx := slogctx.With(r.Context(), "id", id)
+		ctx := slogctx.AddWithPropagation(r.Context(), "id", id)
 
 		// Log some things. Should also have both "path", "id"
 		slog.InfoContext(ctx, "saying hello...")
@@ -41,7 +41,7 @@ func ExampleAttrCollection() {
 	httpLoggingMiddleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Add some logging context/baggage before the handler
-			r = r.WithContext(slogctx.With(r.Context(), "path", r.URL.Path))
+			r = r.WithContext(slogctx.AddWithPropagation(r.Context(), "path", r.URL.Path))
 
 			// Call the next handler
 			next.ServeHTTP(w, r)
@@ -66,7 +66,7 @@ func ExampleAttrCollection() {
 
 	// Wrap our final handler inside our middlewares.
 	// AttrCollector -> Request Logging -> Final Endpoint Handler (helloUser)
-	handler := slogctx.AttrCollection(
+	handler := middlewareWithInitGlobal(
 		httpLoggingMiddleware(
 			http.HandlerFunc(helloUserHandler),
 		),

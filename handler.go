@@ -49,8 +49,8 @@ func NewMiddleware() func(slog.Handler) slog.Handler {
 func NewHandler(next slog.Handler) *Handler {
 
 	prependers := []AttrExtractor{
-		extractAttrCollection,
-		extractPrepended,
+		extractPropagatedAttrs,
+		extractAdded,
 	}
 
 	return &Handler{

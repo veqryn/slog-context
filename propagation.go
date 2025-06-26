@@ -3,44 +3,37 @@ package slogctx
 import (
 	"context"
 	"log/slog"
-	"net/http"
 	"sync"
 	"time"
 
 	"github.com/veqryn/slog-context/internal/attr"
 )
 
-// AttrCollection is an http middleware that collects slog.Attr from
-// any and all later middlewares and the final http request handler, and makes
-// them available to all middlewares and the request handler.
+// InitPropagation initializes a context that allows propegating attributes from child context back to parents.
 // Essentially, it lets you collect slog attributes that are discovered later in
 // the stack (such as authentication and user ID's, derived values, attributes
 // only discovered halfway-through the final request handler after several db
 // queries, etc), and be able to have them be included in the log lines of other
 // middlewares (such as a middleware that logs all requests that come in).
-//
-// Requires the use of slogctx.Handler, as a wrapper or middleware around your
-// slog formatter/sink.
-//
-// Attributes are added by calls to sloghttp.With, and the attributes are then
-// stored inside the context. All calls log that include the context will
-// automatically have all the attributes included (ex: slogctx.Info, or
-// slog.InfoContext).
-func AttrCollection(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// If the context already contains our map, we don't need to create a new one
-		if ctx := r.Context(); fromCtx(ctx) == nil {
-			r = r.WithContext(newCtx(ctx, newSyncOrderedMap()))
-		}
-		next.ServeHTTP(w, r)
-	})
+func InitPropagation(parent context.Context) context.Context {
+	if fromCtx(parent) != nil {
+		// If we already have a collector in the context, return it
+		return parent
+	}
+
+	m := &syncOrderedMap{
+		kv: map[string]slog.Attr{},
+	}
+	if parent == nil {
+		parent = context.Background()
+	}
+
+	return context.WithValue(parent, ctxKey{}, m)
 }
 
-// With adds the provided slog.Attr's to the context. If used with
-// sloghttp.AttrCollection it will add them to the context in a way
-// that is visible to all intermediate middlewares and functions between the
-// collector middleware and the call to With.
-func With(ctx context.Context, args ...any) context.Context {
+// AddWithPropagation adds the provided attributes to the context and propagates them to parent contextes.
+// If propagation wasn't initialized on the context via a InitPropagation(), it falls back to performing a normal Add() operation.
+func AddWithPropagation(ctx context.Context, args ...any) context.Context {
 	// Convert args to a slice of slog.Attr
 	attrs := attr.ArgsToAttrSlice(args)
 	if len(attrs) == 0 {
@@ -54,7 +47,7 @@ func With(ctx context.Context, args ...any) context.Context {
 		// and outside of requests, the most useful thing to do is to return the
 		// context with the attributes added. That way the attributes will still
 		// end up on log lines using this context, which is the goal in both cases.
-		return Prepend(ctx, args...)
+		return Add(ctx, args...)
 	}
 
 	m.mu.Lock()
@@ -72,11 +65,11 @@ func With(ctx context.Context, args ...any) context.Context {
 	return ctx
 }
 
-// extractAttrCollection is a slogctx Extractor that must be used with a
+// extractPropagatedAttrs is a slogctx Extractor that must be used with a
 // slogctx.Handler (via slogctx.HandlerOptions) as Prependers or Appenders.
 // It will cause the Handler to add the Attributes added by sloghttp.With to all
 // log lines using that same context.
-func extractAttrCollection(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
+func extractPropagatedAttrs(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
 	m := fromCtx(ctx)
 	if m == nil {
 		return nil
@@ -100,25 +93,8 @@ type syncOrderedMap struct {
 	order []string
 }
 
-// newSyncOrderedMap creates a usable initialized *syncOrderedMap
-func newSyncOrderedMap() *syncOrderedMap {
-	return &syncOrderedMap{
-		kv: map[string]slog.Attr{},
-	}
-}
-
 // ctxKey is how we find our attribute collector data structure in the context
 type ctxKey struct{}
-
-// newCtx returns a copy of the parent context with the collector data structure
-// attached. The parent context will be unaffected.
-func newCtx(parent context.Context, m *syncOrderedMap) context.Context {
-	if parent == nil {
-		parent = context.Background()
-	}
-
-	return context.WithValue(parent, ctxKey{}, m)
-}
 
 // fromCtx returns the collector data structure if it is found within the
 // context, or nil.

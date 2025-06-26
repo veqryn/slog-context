@@ -23,9 +23,9 @@ func TestHandler(t *testing.T) {
 	tester := &test.Handler{}
 	h := NewHandler(tester)
 
-	ctx := Prepend(nil, "prepend1", "arg1", slog.String("prepend1", "arg2"))
-	ctx = Prepend(ctx, "prepend2", "arg1", "prepend2", "arg2")
-	Prepend(ctx, "prepend3", "arg1", "prepend3", "arg2") // Ensure we aren't overwriting the parent context
+	ctx := Add(nil, "prepend1", "arg1", slog.String("prepend1", "arg2"))
+	ctx = Add(ctx, "prepend2", "arg1", "prepend2", "arg2")
+	Add(ctx, "prepend3", "arg1", "prepend3", "arg2") // Ensure we aren't overwriting the parent context
 
 	l := slog.New(h)
 
