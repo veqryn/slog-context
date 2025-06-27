@@ -25,7 +25,7 @@ func Add(parent context.Context, args ...any) context.Context {
 	return context.WithValue(parent, addKey{}, attr.ArgsToAttrSlice(args))
 }
 
-// Add adds the attribute arguments at a group level
+// AddToGroup adds the attribute arguments at a group level
 // If the future log line does not use the group, it will default to the root level.
 func AddToGroup(parent context.Context, group string, args ...any) context.Context {
 	if parent == nil {
