@@ -1,4 +1,4 @@
-package slogctx_test
+package yasctx_test
 
 import (
 	"bytes"
@@ -8,12 +8,12 @@ import (
 	"testing"
 	"testing/slogtest"
 
-	slogctx "github.com/pazams/yasctx"
+	yasctx "github.com/pazams/yasctx"
 )
 
 func TestSlogtest(t *testing.T) {
 	var buf bytes.Buffer
-	h := slogctx.NewHandler(slog.NewJSONHandler(&buf, nil))
+	h := yasctx.NewHandler(slog.NewJSONHandler(&buf, nil))
 
 	results := func() []map[string]any {
 		ms, err := parseLines(buf.Bytes(), parseJSON)

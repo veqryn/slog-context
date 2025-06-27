@@ -1,5 +1,5 @@
 /*
-Package slogctx lets you use golang structured logging (slog) with context.
+Package yasctx lets you use golang structured logging (slog) with context.
 Add and retrieve logger to and from context. Add attributes to context.
 Automatically read any custom context values, such as OpenTelemetry TraceID.
 
@@ -8,7 +8,7 @@ These workflows can be used individually or together at the same time.
 
 Attributes Extracted from Context Workflow:
 
-Using the slogctx.NewHandler lets us Prepend and Append attributes to
+Using the yasctx.NewHandler lets us Prepend and Append attributes to
 log lines, even when a logger is not passed into a function or in code we don't
 control. This is done without storing the logger in the context; instead the
 attributes are stored in the context and the Handler picks them up later
@@ -28,4 +28,4 @@ and get it back out again. Wrapper methods With / WithGroup / Debug / Info /
 Warn / Error / Log / LogAttrs let us work directly with a logger residing
 with the context (or the default logger if no logger is stored in the context).
 */
-package slogctx
+package yasctx

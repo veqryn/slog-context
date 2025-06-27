@@ -1,4 +1,4 @@
-package slogctx_test
+package yasctx_test
 
 import (
 	"context"
@@ -9,14 +9,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	slogctx "github.com/pazams/yasctx"
+	yasctx "github.com/pazams/yasctx"
 	"github.com/pazams/yasctx/internal/test"
 )
 
 func TestAttrCollection(t *testing.T) {
-	// Create the *slogctx.Handler middleware
+	// Create the *yasctx.Handler middleware
 	tester := &test.Handler{}
-	h := slogctx.NewHandler(
+	h := yasctx.NewHandler(
 		tester,
 	)
 	// Using slog.SetDefault in tests can be problematic,
@@ -78,7 +78,7 @@ func httpLoggingMiddleware(l *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Add some logging context/baggage before the handler
-			r = r.WithContext(slogctx.AddWithPropagation(r.Context(), "path", r.URL.Path))
+			r = r.WithContext(yasctx.AddWithPropagation(r.Context(), "path", r.URL.Path))
 
 			// Call the next handler
 			next.ServeHTTP(w, r)
@@ -98,12 +98,12 @@ func helloUser(l *slog.Logger) http.HandlerFunc {
 
 		// sloghttp.With will add "id" to to the middleware, because it is a synchronized map.
 		// It will show up in all log calls up and down the stack, until the request sloghttp middleware exits.
-		ctx := slogctx.AddWithPropagation(r.Context(), "id", id)
+		ctx := yasctx.AddWithPropagation(r.Context(), "id", id)
 
 		// "foo" only to the Returned context, which will limits its scope
 		// to the rest of this function and any sub-functions called.
 		// The callers of helloUser and all the middlewares will not see "foo".
-		ctx = slogctx.Add(ctx, slog.String("foo", "bar")) // also works
+		ctx = yasctx.Add(ctx, slog.String("foo", "bar")) // also works
 
 		// Log some things
 		l.InfoContext(ctx, "saying hello...") // should also have both "path", "id", and "foo"
@@ -114,16 +114,16 @@ func helloUser(l *slog.Logger) http.HandlerFunc {
 }
 
 func TestOutsideRequest(t *testing.T) {
-	// Create the *slogctx.Handler middleware
+	// Create the *yasctx.Handler middleware
 	tester := &test.Handler{}
-	h := slogctx.NewHandler(
+	h := yasctx.NewHandler(
 		tester,
 	)
 	ctx := context.Background()
 	l := slog.New(h)
 
-	ctx = slogctx.AddWithPropagation(ctx, "id", "13579")
-	ctx = slogctx.AddWithPropagation(ctx) // Should be ignored
+	ctx = yasctx.AddWithPropagation(ctx, "id", "13579")
+	ctx = yasctx.AddWithPropagation(ctx) // Should be ignored
 
 	l.InfoContext(ctx, "utility method") // should also have "id"
 
@@ -141,7 +141,7 @@ func TestOutsideRequest(t *testing.T) {
 
 func middlewareWithInitGlobal(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r = r.WithContext(slogctx.InitPropagation(r.Context()))
+		r = r.WithContext(yasctx.InitPropagation(r.Context()))
 		next.ServeHTTP(w, r)
 	})
 }

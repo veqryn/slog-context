@@ -1,4 +1,4 @@
-package slogctx
+package yasctx
 
 import (
 	"log/slog"

@@ -56,7 +56,7 @@ to a `logr.Logger` as needed, and vice versa. This allows full interoperability
 down the stack and with any libraries that use either slog-context or logr.
 
 ### Other Great SLOG Utilities
-- [slogctx](https://github.com/pazams/yasctx): Add attributes to context and have them automatically added to all log lines. Work with a logger stored in context.
+- [yasctx](https://github.com/pazams/yasctx): Add attributes to context and have them automatically added to all log lines. Work with a logger stored in context.
 - [slogotel](https://github.com/pazams/yasctx/tree/main/otel): Automatically extract and add [OpenTelemetry](https://opentelemetry.io/) TraceID's to all log lines.
 - [sloggrpc](https://github.com/pazams/yasctx/tree/main/grpc): Instrument [GRPC](https://grpc.io/) with automatic logging of all requests and responses.
 - [slogdedup](https://github.com/veqryn/slog-dedup): Middleware that deduplicates and sorts attributes. Particularly useful for JSON logging. Format logs for aggregators (Graylog, GCP/Stackdriver, etc).
@@ -71,7 +71,7 @@ go get github.com/pazams/yasctx
 
 ```go
 import (
-	slogctx "github.com/pazams/yasctx"
+	yasctx "github.com/pazams/yasctx"
 )
 ```
 
@@ -87,7 +87,7 @@ import (
 	"log/slog"
 	"os"
 
-	slogctx "github.com/pazams/yasctx"
+	yasctx "github.com/pazams/yasctx"
 )
 
 // This workflow has us pass the *slog.Logger around inside a context.Context.
@@ -107,14 +107,14 @@ import (
 // logger and its attributes will propagate with it, adding these to any log
 // lines using that context.
 func main() {
-	h := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
+	h := yasctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 	slog.SetDefault(slog.New(h))
 
 	// Store the logger inside the context:
-	ctx := slogctx.NewCtx(context.Background(), slog.Default())
+	ctx := yasctx.NewCtx(context.Background(), slog.Default())
 
 	// Get the logger back out again at any time, for manual usage:
-	log := slogctx.FromCtx(ctx)
+	log := yasctx.FromCtx(ctx)
 	log.Warn("warning")
 	/*
 		{
@@ -125,20 +125,20 @@ func main() {
 	*/
 
 	// Add attributes directly to the logger in the context:
-	ctx = slogctx.With(ctx, "rootKey", "rootValue")
+	ctx = yasctx.With(ctx, "rootKey", "rootValue")
 
 	// Create a group directly on the logger in the context:
-	ctx = slogctx.WithGroup(ctx, "someGroup")
+	ctx = yasctx.WithGroup(ctx, "someGroup")
 
 	// With and wrapper methods have the same args signature as slog methods,
 	// and can take a mix of slog.Attr and key-value pairs.
-	ctx = slogctx.With(ctx, slog.String("subKey", "subValue"), slog.Bool("someBool", true))
+	ctx = yasctx.With(ctx, slog.String("subKey", "subValue"), slog.Bool("someBool", true))
 
 	err := errors.New("an error")
 
 	// Access the logger in the context directly with handy wrappers for Debug/Info/Warn/Error/Log/LogAttrs:
-	slogctx.Error(ctx, "main message",
-		slogctx.Err(err),
+	yasctx.Error(ctx, "main message",
+		yasctx.Err(err),
 		slog.String("mainKey", "mainValue"))
 	/*
 		{
@@ -168,7 +168,7 @@ import (
 	"log/slog"
 	"os"
 
-	slogctx "github.com/pazams/yasctx"
+	yasctx "github.com/pazams/yasctx"
 )
 
 // This workflow lets us use slog as normal, while adding the ability to put
@@ -184,23 +184,23 @@ import (
 // Logger to all functions you wish to add attributes to.
 //
 // Attributes and key-value pairs like request-id, trace-id, user-id, etc, can
-// be added to the context, and the *slogctx.Handler will make sure they
+// be added to the context, and the *yasctx.Handler will make sure they
 // are prepended to the start, or appended to the end, of any log lines using
 // that context.
 func main() {
-	// Create the *slogctx.Handler middleware
-	h := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
+	// Create the *yasctx.Handler middleware
+	h := yasctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 	slog.SetDefault(slog.New(h))
 
 	ctx := context.Background()
 
 	// Prepend some slog attributes to the start of future log lines:
-	ctx = slogctx.Prepend(ctx, "prependKey", "prependValue")
+	ctx = yasctx.Prepend(ctx, "prependKey", "prependValue")
 
 	// Append some slog attributes to the end of future log lines:
 	// Prepend and Append have the same args signature as slog methods,
 	// and can take a mix of slog.Attr and key-value pairs.
-	ctx = slogctx.Append(ctx, slog.String("appendKey", "appendValue"))
+	ctx = yasctx.Append(ctx, slog.String("appendKey", "appendValue"))
 
 	// Use the logger like normal:
 	slog.WarnContext(ctx, "main message", "mainKey", "mainValue")
@@ -249,7 +249,7 @@ import (
 	"os"
 	"time"
 
-	slogctx "github.com/pazams/yasctx"
+	yasctx "github.com/pazams/yasctx"
 )
 
 type ctxKey struct{}
@@ -265,18 +265,18 @@ func customExtractor(ctx context.Context, _ time.Time, _ slog.Level, _ string) [
 // custom values we want from any context, and having them added to the start
 // or end of the log record.
 func main() {
-	// Create the *slogctx.Handler middleware
-	h := slogctx.NewHandler(
+	// Create the *yasctx.Handler middleware
+	h := yasctx.NewHandler(
 		slog.NewJSONHandler(os.Stdout, nil), // The next handler in the chain
-		&slogctx.HandlerOptions{
+		&yasctx.HandlerOptions{
 			// Prependers stays as default (leaving as nil would accomplish the same)
-			Prependers: []slogctx.AttrExtractor{
-				slogctx.ExtractPrepended,
+			Prependers: []yasctx.AttrExtractor{
+				yasctx.ExtractPrepended,
 			},
-			// Appenders first appends anything added with slogctx.Append,
+			// Appenders first appends anything added with yasctx.Append,
 			// then appends our custom ctx value
-			Appenders: []slogctx.AttrExtractor{
-				slogctx.ExtractAppended,
+			Appenders: []yasctx.AttrExtractor{
+				yasctx.ExtractAppended,
 				customExtractor,
 			},
 		},
@@ -316,7 +316,7 @@ import (
 	"os"
 	"time"
 
-	slogctx "github.com/pazams/yasctx"
+	yasctx "github.com/pazams/yasctx"
 	slogotel "github.com/pazams/yasctx/otel"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
@@ -327,19 +327,19 @@ import (
 )
 
 func init() {
-	// Create the *slogctx.Handler middleware
-	h := slogctx.NewHandler(
+	// Create the *yasctx.Handler middleware
+	h := yasctx.NewHandler(
 		slog.NewJSONHandler(os.Stdout, nil), // The next handler in the chain
-		&slogctx.HandlerOptions{
+		&yasctx.HandlerOptions{
 			// Prependers will first add the OTEL Trace ID,
 			// then anything else Prepended to the ctx
-			Prependers: []slogctx.AttrExtractor{
+			Prependers: []yasctx.AttrExtractor{
 				slogotel.ExtractTraceSpanID,
-				slogctx.ExtractPrepended,
+				yasctx.ExtractPrepended,
 			},
 			// Appenders stays as default (leaving as nil would accomplish the same)
-			Appenders: []slogctx.AttrExtractor{
-				slogctx.ExtractAppended,
+			Appenders: []yasctx.AttrExtractor{
+				yasctx.ExtractAppended,
 			},
 		},
 	)
@@ -369,7 +369,7 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, span := tracer.Start(r.Context(), "helloHandler")
 	defer span.End()
 
-	slogctx.Info(ctx, "starting long calculation...")
+	yasctx.Info(ctx, "starting long calculation...")
 	/*
 		{
 			"time": "2023-11-17T03:11:20.584592-07:00",
@@ -381,7 +381,7 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	*/
 
 	time.Sleep(5 * time.Second)
-	slogctx.Error(ctx, "something failed...")
+	yasctx.Error(ctx, "something failed...")
 	/*
 		{
 			"time": "2023-11-17T03:11:25.586464-07:00",
@@ -461,20 +461,20 @@ import (
 	"net/http"
 	"os"
 
-	slogctx "github.com/pazams/yasctx"
+	yasctx "github.com/pazams/yasctx"
 	sloghttp "github.com/pazams/yasctx/http"
 )
 
 func init() {
-	// Create the *slogctx.Handler middleware
-	h := slogctx.NewHandler(
+	// Create the *yasctx.Handler middleware
+	h := yasctx.NewHandler(
 		slog.NewJSONHandler(os.Stdout, nil), // The next or final handler in the chain
-		&slogctx.HandlerOptions{
+		&yasctx.HandlerOptions{
 			// Prependers will first add any sloghttp.With attributes,
 			// then anything else Prepended to the ctx
-			Prependers: []slogctx.AttrExtractor{
+			Prependers: []yasctx.AttrExtractor{
 				sloghttp.ExtractAttrCollection, // our sloghttp middleware extractor
-				slogctx.ExtractPrepended,       // for all other prepended attributes
+				yasctx.ExtractPrepended,       // for all other prepended attributes
 			},
 		},
 	)
@@ -518,7 +518,7 @@ func httpLoggingMiddleware(next http.Handler) http.Handler {
 
 		// Should also have both "path" and "id", but not "foo".
 		// Having "id" included in the log is the whole point of this package!
-		slogctx.Info(r.Context(), "Response", "method", r.Method)
+		yasctx.Info(r.Context(), "Response", "method", r.Method)
 		/*
 			{
 				"time": "2024-04-01T00:06:11Z",
@@ -543,16 +543,16 @@ func helloUser(w http.ResponseWriter, r *http.Request) {
 	// until the request sloghttp middleware exits.
 	ctx := sloghttp.With(r.Context(), "id", id)
 
-	// The regular slogctx.With will add "foo" only to the Returned context,
+	// The regular yasctx.With will add "foo" only to the Returned context,
 	// which will limits its scope to the rest of this function (helloUser) and
 	// any functions called by helloUser and passed this context.
 	// The original caller of helloUser and all the middlewares will NOT see
 	// "foo", because it is only part of the newly returned ctx.
-	ctx = slogctx.With(ctx, "foo", "bar")
+	ctx = yasctx.With(ctx, "foo", "bar")
 
 	// Log some things.
 	// Should also have both "path", "id", and "foo"
-	slogctx.Info(ctx, "saying hello...")
+	yasctx.Info(ctx, "saying hello...")
 	/*
 		{
 			"time": "2024-04-01T00:06:11Z",
@@ -584,7 +584,7 @@ import (
 	"os"
 	"strings"
 
-	slogctx "github.com/pazams/yasctx"
+	yasctx "github.com/pazams/yasctx"
 	sloggrpc "github.com/pazams/yasctx/grpc"
 	pb "github.com/pazams/yasctx/grpc/test/gen"
 	"google.golang.org/grpc"
@@ -592,8 +592,8 @@ import (
 )
 
 func init() {
-	// Create the *slogctx.Handler middleware
-	h := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
+	// Create the *yasctx.Handler middleware
+	h := yasctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 	slog.SetDefault(slog.New(h))
 }
 
@@ -608,7 +608,7 @@ func main() {
 	// Create a listener on TCP port for gRPC:
 	lis, err := net.Listen("tcp", ":8000")
 	if err != nil {
-		slogctx.Error(ctx, "Unable to create grpc listener", slogctx.Err(err))
+		yasctx.Error(ctx, "Unable to create grpc listener", yasctx.Err(err))
 		panic(err)
 	}
 
@@ -1013,7 +1013,7 @@ import (
 	"log/slog"
 	"os"
 
-	slogctx "github.com/pazams/yasctx"
+	yasctx "github.com/pazams/yasctx"
 	sloggrpc "github.com/pazams/yasctx/grpc"
 	pb "github.com/pazams/yasctx/grpc/test/gen"
 	"google.golang.org/grpc"
@@ -1021,8 +1021,8 @@ import (
 )
 
 func init() {
-	// Create the *slogctx.Handler middleware
-	h := slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
+	// Create the *yasctx.Handler middleware
+	h := yasctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 	slog.SetDefault(slog.New(h))
 }
 
@@ -1437,7 +1437,7 @@ This library has a convenience method that allow it to interoperate with [github
 in order to easily setup slog workflows such as pipelines, fanout, routing, failover, etc.
 ```go
 slog.SetDefault(slog.New(slogmulti.
-	Pipe(slogctx.NewMiddleware(&slogctx.HandlerOptions{})).
+	Pipe(yasctx.NewMiddleware(&yasctx.HandlerOptions{})).
 	Pipe(slogdedup.NewOverwriteMiddleware(&slogdedup.OverwriteHandlerOptions{})).
 	Handler(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{})),
 ))
@@ -1448,7 +1448,7 @@ slog.SetDefault(slog.New(slogmulti.
 Package function `ToCtx` renamed to `NewCtx`.
 Package function `Logger` renamed to `FromCtx`.
 
-Package renamed from `slogcontext` to `slogctx`.
+Package renamed from `slogcontext` to `yasctx`.
 To fix, change this:
 ```go
 import "github.com/pazams/yasctx"
@@ -1457,6 +1457,6 @@ var h = slogcontext.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 To this:
 ```go
 import "github.com/pazams/yasctx"
-var h = slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
+var h = yasctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 ```
 Named imports are unaffected.

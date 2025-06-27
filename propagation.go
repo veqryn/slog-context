@@ -1,4 +1,4 @@
-package slogctx
+package yasctx
 
 import (
 	"context"
@@ -65,8 +65,8 @@ func AddWithPropagation(ctx context.Context, args ...any) context.Context {
 	return ctx
 }
 
-// extractPropagatedAttrs is a slogctx Extractor that must be used with a
-// slogctx.Handler (via slogctx.HandlerOptions) as Prependers or Appenders.
+// extractPropagatedAttrs is a yasctx Extractor that must be used with a
+// yasctx.Handler (via yasctx.HandlerOptions) as Prependers or Appenders.
 // It will cause the Handler to add the Attributes added by sloghttp.With to all
 // log lines using that same context.
 func extractPropagatedAttrs(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
