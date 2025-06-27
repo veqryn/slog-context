@@ -67,6 +67,23 @@ func (h *Handler) Enabled(ctx context.Context, level slog.Level) bool {
 
 // Handle de-duplicates all attributes and groups, then passes the new set of attributes to the next handler.
 func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
+
+	// Initialize a mapping from extractAddedToGroup() with added bool to track which groups were used.
+	// This will allow us to prepend any unused groups to the final attributes.
+	addedToGroup := map[string]*struct {
+		attrs []slog.Attr
+		used  bool
+	}{}
+	for k, v := range extractAddedToGroup(ctx, r.Time, r.Level, r.Message) {
+		addedToGroup[k] = &struct {
+			attrs []slog.Attr
+			used  bool
+		}{
+			attrs: v,
+			used:  false,
+		}
+	}
+
 	// Collect all attributes from the record (which is the most recent attribute set).
 	// These attributes are ordered from oldest to newest, and our collection will be too.
 	finalAttrs := make([]slog.Attr, 0, r.NumAttrs())
@@ -78,7 +95,15 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 	// Iterate through the goa (group Or Attributes) linked list, which is ordered from newest to oldest
 	for g := h.goa; g != nil; g = g.next {
 		if g.group != "" {
-			// If a group, but all the previous attributes (the newest ones) in it
+			if ctxGroupAttrs, ok := addedToGroup[g.group]; ok {
+				// If we have attributes for this group, we will use them.
+				if !ctxGroupAttrs.used {
+					// Mark this group as used, so we don't use it again.
+					ctxGroupAttrs.used = true
+					finalAttrs = append(slices.Clip(ctxGroupAttrs.attrs), finalAttrs...)
+				}
+			}
+			// If a group, put all the previous attributes (the newest ones) in it
 			finalAttrs = []slog.Attr{{
 				Key:   g.group,
 				Value: slog.GroupValue(finalAttrs...),
@@ -86,6 +111,13 @@ func (h *Handler) Handle(ctx context.Context, r slog.Record) error {
 		} else {
 			// Prepend to the front of finalAttrs, thereby making finalAttrs ordered from oldest to newest
 			finalAttrs = append(slices.Clip(g.attrs), finalAttrs...)
+		}
+	}
+
+	// Add in any unsued group attributes that were not used to the start (root)
+	for _, ctxGroupAttrs := range addedToGroup {
+		if !ctxGroupAttrs.used {
+			finalAttrs = append(slices.Clip(ctxGroupAttrs.attrs), finalAttrs...)
 		}
 	}
 
