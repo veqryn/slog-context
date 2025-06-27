@@ -6,6 +6,3 @@ coverage:
     patch:
       default:
         target: 80%
-ignore:
-  - "examples"
-  - "grpc/test"
