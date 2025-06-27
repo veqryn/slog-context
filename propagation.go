@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/veqryn/slog-context/internal/attr"
+	"github.com/pazams/yasctx/internal/attr"
 )
 
 // InitPropagation initializes a context that allows propegating attributes from child context back to parents.

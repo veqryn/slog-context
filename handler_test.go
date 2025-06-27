@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/veqryn/slog-context/internal/test"
+	"github.com/pazams/yasctx/internal/test"
 )
 
 type logLine struct {
@@ -69,7 +69,7 @@ func TestHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if unmarshalled.Source.Function != "github.com/veqryn/slog-context.TestHandler" ||
+	if unmarshalled.Source.Function != "github.com/pazams/yasctx.TestHandler" ||
 		!strings.HasSuffix(unmarshalled.Source.File, "slog-context/handler_test.go") ||
 		unmarshalled.Source.Line != 40 {
 		t.Errorf("Expected source fields are incorrect: %#+v\n", unmarshalled)

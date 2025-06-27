@@ -1,5 +1,3 @@
-module github.com/veqryn/slog-context
+module github.com/pazams/yasctx
 
 go 1.21
-
-require github.com/go-logr/logr v1.4.3

@@ -6,7 +6,7 @@ to fix the issue before public exposure, reducing the chance that the exploit wi
 used before a patch is released.
 
 You may submit the report in the following ways:
-- send us a [private vulnerability report](https://github.com/veqryn/slog-context/security/advisories/new)
+- send us a [private vulnerability report](https://github.com/pazams/yasctx/security/advisories/new)
 
 Please provide the following information in your report:
 - A description of the vulnerability and its impact

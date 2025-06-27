@@ -1,12 +1,12 @@
 # slog-context
-[![tag](https://img.shields.io/github/tag/veqryn/slog-context.svg)](https://github.com/veqryn/slog-context/releases)
+[![tag](https://img.shields.io/github/tag/pazams/yasctx.svg)](https://github.com/pazams/yasctx/releases)
 ![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.21-%23007d9c)
-[![GoDoc](https://godoc.org/github.com/veqryn/slog-context?status.svg)](https://pkg.go.dev/github.com/veqryn/slog-context)
-![Build Status](https://github.com/veqryn/slog-context/actions/workflows/build_and_test.yml/badge.svg)
-[![Go report](https://goreportcard.com/badge/github.com/veqryn/slog-context)](https://goreportcard.com/report/github.com/veqryn/slog-context)
-[![Coverage](https://img.shields.io/codecov/c/github/veqryn/slog-context)](https://codecov.io/gh/veqryn/slog-context)
-[![Contributors](https://img.shields.io/github/contributors/veqryn/slog-context)](https://github.com/veqryn/slog-context/graphs/contributors)
-[![License](https://img.shields.io/github/license/veqryn/slog-context)](./LICENSE)
+[![GoDoc](https://godoc.org/github.com/pazams/yasctx?status.svg)](https://pkg.go.dev/github.com/pazams/yasctx)
+![Build Status](https://github.com/pazams/yasctx/actions/workflows/build_and_test.yml/badge.svg)
+[![Go report](https://goreportcard.com/badge/github.com/pazams/yasctx)](https://goreportcard.com/report/github.com/pazams/yasctx)
+[![Coverage](https://img.shields.io/codecov/c/github/pazams/yasctx)](https://codecov.io/gh/pazams/yasctx)
+[![Contributors](https://img.shields.io/github/contributors/pazams/yasctx)](https://github.com/pazams/yasctx/graphs/contributors)
+[![License](https://img.shields.io/github/license/pazams/yasctx)](./LICENSE)
 
 Use golang structured logging (slog) with context.
 Add and retrieve logger to and from context.
@@ -56,9 +56,9 @@ to a `logr.Logger` as needed, and vice versa. This allows full interoperability
 down the stack and with any libraries that use either slog-context or logr.
 
 ### Other Great SLOG Utilities
-- [slogctx](https://github.com/veqryn/slog-context): Add attributes to context and have them automatically added to all log lines. Work with a logger stored in context.
-- [slogotel](https://github.com/veqryn/slog-context/tree/main/otel): Automatically extract and add [OpenTelemetry](https://opentelemetry.io/) TraceID's to all log lines.
-- [sloggrpc](https://github.com/veqryn/slog-context/tree/main/grpc): Instrument [GRPC](https://grpc.io/) with automatic logging of all requests and responses.
+- [slogctx](https://github.com/pazams/yasctx): Add attributes to context and have them automatically added to all log lines. Work with a logger stored in context.
+- [slogotel](https://github.com/pazams/yasctx/tree/main/otel): Automatically extract and add [OpenTelemetry](https://opentelemetry.io/) TraceID's to all log lines.
+- [sloggrpc](https://github.com/pazams/yasctx/tree/main/grpc): Instrument [GRPC](https://grpc.io/) with automatic logging of all requests and responses.
 - [slogdedup](https://github.com/veqryn/slog-dedup): Middleware that deduplicates and sorts attributes. Particularly useful for JSON logging. Format logs for aggregators (Graylog, GCP/Stackdriver, etc).
 - [slogbugsnag](https://github.com/veqryn/slog-bugsnag): Middleware that pipes Errors to [Bugsnag](https://www.bugsnag.com/).
 - [slogjson](https://github.com/veqryn/slog-json): Formatter that uses the [JSON v2](https://github.com/golang/go/discussions/63397) [library](https://github.com/go-json-experiment/json), with optional single-line pretty-printing.
@@ -66,12 +66,12 @@ down the stack and with any libraries that use either slog-context or logr.
 ## Install
 
 ```
-go get github.com/veqryn/slog-context
+go get github.com/pazams/yasctx
 ```
 
 ```go
 import (
-	slogctx "github.com/veqryn/slog-context"
+	slogctx "github.com/pazams/yasctx"
 )
 ```
 
@@ -87,7 +87,7 @@ import (
 	"log/slog"
 	"os"
 
-	slogctx "github.com/veqryn/slog-context"
+	slogctx "github.com/pazams/yasctx"
 )
 
 // This workflow has us pass the *slog.Logger around inside a context.Context.
@@ -168,7 +168,7 @@ import (
 	"log/slog"
 	"os"
 
-	slogctx "github.com/veqryn/slog-context"
+	slogctx "github.com/pazams/yasctx"
 )
 
 // This workflow lets us use slog as normal, while adding the ability to put
@@ -249,7 +249,7 @@ import (
 	"os"
 	"time"
 
-	slogctx "github.com/veqryn/slog-context"
+	slogctx "github.com/pazams/yasctx"
 )
 
 type ctxKey struct{}
@@ -304,7 +304,7 @@ func main() {
 In order to avoid making all users of this repo require all the OTEL libraries,
 the OTEL extractor is in a separate module in this repo:
 
-`go get github.com/veqryn/slog-context/otel`
+`go get github.com/pazams/yasctx/otel`
 
 ```go
 package main
@@ -316,8 +316,8 @@ import (
 	"os"
 	"time"
 
-	slogctx "github.com/veqryn/slog-context"
-	slogotel "github.com/veqryn/slog-context/otel"
+	slogctx "github.com/pazams/yasctx"
+	slogotel "github.com/pazams/yasctx/otel"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -461,8 +461,8 @@ import (
 	"net/http"
 	"os"
 
-	slogctx "github.com/veqryn/slog-context"
-	sloghttp "github.com/veqryn/slog-context/http"
+	slogctx "github.com/pazams/yasctx"
+	sloghttp "github.com/pazams/yasctx/http"
 )
 
 func init() {
@@ -584,9 +584,9 @@ import (
 	"os"
 	"strings"
 
-	slogctx "github.com/veqryn/slog-context"
-	sloggrpc "github.com/veqryn/slog-context/grpc"
-	pb "github.com/veqryn/slog-context/grpc/test/gen"
+	slogctx "github.com/pazams/yasctx"
+	sloggrpc "github.com/pazams/yasctx/grpc"
+	pb "github.com/pazams/yasctx/grpc/test/gen"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -1013,9 +1013,9 @@ import (
 	"log/slog"
 	"os"
 
-	slogctx "github.com/veqryn/slog-context"
-	sloggrpc "github.com/veqryn/slog-context/grpc"
-	pb "github.com/veqryn/slog-context/grpc/test/gen"
+	slogctx "github.com/pazams/yasctx"
+	sloggrpc "github.com/pazams/yasctx/grpc"
+	pb "github.com/pazams/yasctx/grpc/test/gen"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -1451,12 +1451,12 @@ Package function `Logger` renamed to `FromCtx`.
 Package renamed from `slogcontext` to `slogctx`.
 To fix, change this:
 ```go
-import "github.com/veqryn/slog-context"
+import "github.com/pazams/yasctx"
 var h = slogcontext.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 ```
 To this:
 ```go
-import "github.com/veqryn/slog-context"
+import "github.com/pazams/yasctx"
 var h = slogctx.NewHandler(slog.NewJSONHandler(os.Stdout, nil), nil)
 ```
 Named imports are unaffected.

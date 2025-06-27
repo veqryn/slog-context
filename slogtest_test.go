@@ -8,7 +8,7 @@ import (
 	"testing"
 	"testing/slogtest"
 
-	slogctx "github.com/veqryn/slog-context"
+	slogctx "github.com/pazams/yasctx"
 )
 
 func TestSlogtest(t *testing.T) {

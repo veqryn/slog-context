@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	slogctx "github.com/veqryn/slog-context"
-	"github.com/veqryn/slog-context/internal/test"
+	slogctx "github.com/pazams/yasctx"
+	"github.com/pazams/yasctx/internal/test"
 )
 
 func TestAttrCollection(t *testing.T) {

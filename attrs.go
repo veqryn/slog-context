@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/veqryn/slog-context/internal/attr"
+	"github.com/pazams/yasctx/internal/attr"
 )
 
 type addKey struct{}
