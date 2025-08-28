@@ -35,6 +35,7 @@ type config struct {
 	InterceptorFilter  InterceptorFilter
 	AppendToAttributes AppendToAttributes
 	ErrorToLevel       ErrorToLevel
+	DefaultLevel       slog.Level
 	role               string
 	Logger             Logger
 }
@@ -49,6 +50,7 @@ func newConfig(opts []Option, role string) *config {
 	c := &config{
 		AppendToAttributes: AppendToAttributesDefault,
 		Logger:             LoggerDefault,
+		DefaultLevel:       slog.LevelInfo,
 		role:               role,
 	}
 	if role == "client" {
@@ -217,4 +219,17 @@ func (o interceptorLoggerOption) apply(c *config) {
 	if o.f != nil {
 		c.Logger = o.f
 	}
+}
+
+// WithDefaultLevel returns an Option to set the log level for successful operations (requests, responses, etc.)
+func WithDefaultLevel(level slog.Level) Option {
+	return interceptorDefaultLevelOption{level: level}
+}
+
+type interceptorDefaultLevelOption struct {
+	level slog.Level
+}
+
+func (o interceptorDefaultLevelOption) apply(c *config) {
+	c.DefaultLevel = o.level
 }
