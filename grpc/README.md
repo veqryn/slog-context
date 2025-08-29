@@ -80,7 +80,7 @@ func main() {
 		// We will use the sloggrpc.AppendToAttributesAll option, which is fairly verbose with the attributes.
 		// There is also a slimmer sloggrpc.AppendToAttributesDefault, which is what it used if no option is provided.
 		// You can also write your own to customize which attributes are added, or rename their keys.
-		// There are also other options available: WithErrorToLevel, and WithLogger
+		// There are also other options available: WithDefaultLevel, WithErrorToLevel, and WithLogger
 		grpc.ChainUnaryInterceptor(sloggrpc.SlogUnaryServerInterceptor(
 			sloggrpc.WithAppendToAttributes(sloggrpc.AppendToAttributesAll),
 			sloggrpc.WithInterceptorFilter(sloggrpc.InterceptorFilterIgnoreReflection))),

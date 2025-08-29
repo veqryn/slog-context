@@ -20,7 +20,7 @@ func (c *config) appendCode(attrs []slog.Attr, err error) (slog.Level, []slog.At
 	}
 	attrs = c.AppendToAttributes(attrs, slog.String("code_name", codes.OK.String()))
 	attrs = c.AppendToAttributes(attrs, slog.Int("code", int(codes.OK)))
-	return slog.LevelInfo, attrs
+	return c.DefaultLevel, attrs
 }
 
 func (c *config) appendCommon(attrs []slog.Attr, role Role, call Call, peer Peer) []slog.Attr {
@@ -53,7 +53,7 @@ func (c *config) logRequest(ctx context.Context, role Role, call Call, peer Peer
 	attrs := c.appendCommon(make([]slog.Attr, 0, 10), role, call, peer)
 	attrs = c.appendPayload(attrs, "req", req)
 
-	c.Logger(ctx, slog.LevelInfo, "rpcReq", attrs...)
+	c.Logger(ctx, c.DefaultLevel, "rpcReq", attrs...)
 }
 
 func (c *config) logResponse(ctx context.Context, role Role, call Call, peer Peer, req Payload, resp Payload, result Result) {
@@ -70,7 +70,7 @@ func (c *config) logStreamStart(ctx context.Context, role Role, call Call, peer 
 		// No need to log the result code/payload, because if the server has
 		// received the start connection, it will always be good.
 		attrs := c.appendCommon(make([]slog.Attr, 0, 9), role, call, peer)
-		c.Logger(ctx, slog.LevelInfo, "rpcStreamStart", attrs...)
+		c.Logger(ctx, c.DefaultLevel, "rpcStreamStart", attrs...)
 		return
 	}
 
