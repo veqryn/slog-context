@@ -33,7 +33,7 @@ func InitPropagation(parent context.Context) context.Context {
 }
 
 // AddWithPropagation adds the provided attributes to the context and propagates them to parent contextes.
-// If propagation wasn't initialized on the context via a InitPropagation(), it falls back to performing a normal Add() operation.
+// If propagation wasn't initialized on the context via a InitPropagation(), it falls back to performing a With() call.
 func AddWithPropagation(ctx context.Context, args ...any) context.Context {
 	// Convert args to a slice of slog.Attr
 	attrs := attr.ArgsToAttrSlice(args)
