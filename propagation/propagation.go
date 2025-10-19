@@ -1,4 +1,4 @@
-package slogctx
+package propagation
 
 import (
 	"context"
@@ -6,17 +6,18 @@ import (
 	"sync"
 	"time"
 
+	slogctx "github.com/veqryn/slog-context"
 	"github.com/veqryn/slog-context/internal/attr"
 )
 
-// InitPropagation initializes a context that allows propagating attributes from child context back to parents.
+// Init initializes a context that allows propagating attributes from child context back to parents.
 // Essentially, it lets you collect slog attributes that are discovered later in
 // the stack (such as authentication and user ID's, derived values, attributes
 // only discovered halfway-through the final request handler after several db
 // queries, etc), and be able to have them be included in the log lines of other
 // middlewares (such as a middleware that logs all requests that come in).
 // For a ready-to-use http middleware that implements this feature, see package github.com/veqryn/slog-context/http
-func InitPropagation(parent context.Context) context.Context {
+func Init(parent context.Context) context.Context {
 	if fromCtx(parent) != nil {
 		// If we already have a collector in the context, return it
 		return parent
@@ -32,9 +33,9 @@ func InitPropagation(parent context.Context) context.Context {
 	return context.WithValue(parent, ctxKey{}, m)
 }
 
-// AddWithPropagation adds the provided attributes to the context and propagates them to parent contextes.
-// If propagation wasn't initialized on the context via a InitPropagation(), it falls back to performing a With() call.
-func AddWithPropagation(ctx context.Context, args ...any) context.Context {
+// Add adds the provided attributes to the context and propagates them to parent contextes.
+// If propagation wasn't initialized on the context via a Init(), it falls back to performing a With() call.
+func Add(ctx context.Context, args ...any) context.Context {
 	// Convert args to a slice of slog.Attr
 	attrs := attr.ArgsToAttrSlice(args)
 	if len(attrs) == 0 {
@@ -48,7 +49,7 @@ func AddWithPropagation(ctx context.Context, args ...any) context.Context {
 		// and outside of requests, the most useful thing to do is to return the
 		// context with the attributes added. That way the attributes will still
 		// end up on log lines using this context if this use the attached logger flow
-		return With(ctx, args...)
+		return slogctx.With(ctx, args...)
 	}
 
 	m.mu.Lock()
@@ -66,11 +67,11 @@ func AddWithPropagation(ctx context.Context, args ...any) context.Context {
 	return ctx
 }
 
-// ExtractPropagatedAttrs is a slogctx Extractor that must be used with a
+// ExtractAttrs is a slogctx Extractor that must be used with a
 // slogctx.Handler (via slogctx.HandlerOptions) as Prependers or Appenders.
-// It will cause the Handler to add the Attributes added by slogctx.AddWithPropagation to all
+// It will cause the Handler to add the Attributes added by slogctx.Add() to all
 // log lines using that same context.
-func ExtractPropagatedAttrs(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
+func ExtractAttrs(ctx context.Context, _ time.Time, _ slog.Level, _ string) []slog.Attr {
 	m := fromCtx(ctx)
 	if m == nil {
 		return nil

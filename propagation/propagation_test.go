@@ -1,4 +1,4 @@
-package slogctx_test
+package propagation
 
 import (
 	"context"
@@ -20,8 +20,8 @@ func TestAttrCollection(t *testing.T) {
 		tester,
 		&slogctx.HandlerOptions{
 			Prependers: []slogctx.AttrExtractor{
-				slogctx.ExtractPropagatedAttrs, // our propagated attributes extractor
-				slogctx.ExtractPrepended,       // for all other prepended attributes
+				ExtractAttrs,             // our propagated attributes extractor
+				slogctx.ExtractPrepended, // for all other prepended attributes
 			},
 		},
 	)
@@ -84,16 +84,16 @@ func TestOutsideRequestAttachedAttributes(t *testing.T) {
 		tester,
 		&slogctx.HandlerOptions{
 			Prependers: []slogctx.AttrExtractor{
-				slogctx.ExtractPropagatedAttrs, // our propagated attributes extractor
-				slogctx.ExtractPrepended,       // for all other prepended attributes
+				ExtractAttrs,             // our propagated attributes extractor
+				slogctx.ExtractPrepended, // for all other prepended attributes
 			},
 		},
 	)
 	ctx := context.Background()
 	l := slog.New(h)
 
-	ctx = slogctx.AddWithPropagation(ctx, "id", "13579")
-	ctx = slogctx.AddWithPropagation(ctx) // Should be ignored
+	ctx = Add(ctx, "id", "13579")
+	ctx = Add(ctx) // Should be ignored
 
 	// "id" will be missing since we didn't use InitPropagation()
 	l.InfoContext(ctx, "utility method")
@@ -119,8 +119,8 @@ func TestOutsideRequestAttachedLogger(t *testing.T) {
 		tester,
 		&slogctx.HandlerOptions{
 			Prependers: []slogctx.AttrExtractor{
-				slogctx.ExtractPropagatedAttrs, // our propagated attributes extractor
-				slogctx.ExtractPrepended,       // for all other prepended attributes
+				ExtractAttrs,             // our propagated attributes extractor
+				slogctx.ExtractPrepended, // for all other prepended attributes
 			},
 		},
 	)
@@ -128,8 +128,8 @@ func TestOutsideRequestAttachedLogger(t *testing.T) {
 	l := slog.New(h)
 	ctx = slogctx.NewCtx(ctx, l)
 
-	ctx = slogctx.AddWithPropagation(ctx, "id", "13579")
-	ctx = slogctx.AddWithPropagation(ctx) // Should be ignored
+	ctx = Add(ctx, "id", "13579")
+	ctx = Add(ctx) // Should be ignored
 
 	// "id" will be present. We didn't use InitPropagation(), however AddWithPropagation() falls back to the attached logger flow
 	slogctx.FromCtx(ctx).InfoContext(ctx, "utility method")
@@ -155,7 +155,7 @@ func httpLoggingMiddleware(l *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Add some logging context/baggage before the handler
-			r = r.WithContext(slogctx.AddWithPropagation(r.Context(), "path", r.URL.Path))
+			r = r.WithContext(Add(r.Context(), "path", r.URL.Path))
 
 			// Call the next handler
 			next.ServeHTTP(w, r)
@@ -175,7 +175,7 @@ func helloUser(l *slog.Logger) http.HandlerFunc {
 
 		// slogctx.AddWithPropagation will add "id" to to the middleware, because it is a synchronized map.
 		// It will show up in all log calls up and down the stack, until the request in middlewareWithInitPropagation exits.
-		ctx := slogctx.AddWithPropagation(r.Context(), "id", id)
+		ctx := Add(r.Context(), "id", id)
 
 		// slogctx.Prepend will add "foo" only to the Returned context, which will limits its scope
 		// to the rest of this function and any sub-functions called.
@@ -193,7 +193,7 @@ func helloUser(l *slog.Logger) http.HandlerFunc {
 // middleware to initialize propagating attributes from child context back to parents for each request.
 func middlewareWithInitPropagation(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r = r.WithContext(slogctx.InitPropagation(r.Context()))
+		r = r.WithContext(Init(r.Context()))
 		next.ServeHTTP(w, r)
 	})
 }
