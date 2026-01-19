@@ -33,9 +33,9 @@ func Init(parent context.Context) context.Context {
 	return context.WithValue(parent, ctxKey{}, m)
 }
 
-// Add adds the provided attributes to the context and propagates them to parent contextes.
+// With adds the provided attributes to the context and propagates them to parent contextes.
 // If propagation wasn't initialized on the context via a Init(), it falls back to performing a With() call.
-func Add(ctx context.Context, args ...any) context.Context {
+func With(ctx context.Context, args ...any) context.Context {
 	// Convert args to a slice of slog.Attr
 	attrs := attr.ArgsToAttrSlice(args)
 	if len(attrs) == 0 {

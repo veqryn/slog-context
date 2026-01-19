@@ -41,7 +41,7 @@ func AttrCollection(next http.Handler) http.Handler {
 func With(ctx context.Context, args ...any) context.Context {
 	// Delegate to the propagation-aware add function. It will fall back to
 	// the attached-logger flow when propagation isn't initialized.
-	return propagate.Add(ctx, args...)
+	return propagate.With(ctx, args...)
 }
 
 // ExtractAttrCollection is a slogctx Extractor that must be used with a

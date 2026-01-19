@@ -92,8 +92,8 @@ func TestOutsideRequestAttachedAttributes(t *testing.T) {
 	ctx := context.Background()
 	l := slog.New(h)
 
-	ctx = Add(ctx, "id", "13579")
-	ctx = Add(ctx) // Should be ignored
+	ctx = With(ctx, "id", "13579")
+	ctx = With(ctx) // Should be ignored
 
 	// "id" will be missing since we didn't use InitPropagation()
 	l.InfoContext(ctx, "utility method")
@@ -128,8 +128,8 @@ func TestOutsideRequestAttachedLogger(t *testing.T) {
 	l := slog.New(h)
 	ctx = slogctx.NewCtx(ctx, l)
 
-	ctx = Add(ctx, "id", "13579")
-	ctx = Add(ctx) // Should be ignored
+	ctx = With(ctx, "id", "13579")
+	ctx = With(ctx) // Should be ignored
 
 	// "id" will be present. We didn't use InitPropagation(), however AddWithPropagation() falls back to the attached logger flow
 	slogctx.FromCtx(ctx).InfoContext(ctx, "utility method")
@@ -155,7 +155,7 @@ func httpLoggingMiddleware(l *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Add some logging context/baggage before the handler
-			r = r.WithContext(Add(r.Context(), "path", r.URL.Path))
+			r = r.WithContext(With(r.Context(), "path", r.URL.Path))
 
 			// Call the next handler
 			next.ServeHTTP(w, r)
@@ -175,7 +175,7 @@ func helloUser(l *slog.Logger) http.HandlerFunc {
 
 		// slogctx.AddWithPropagation will add "id" to to the middleware, because it is a synchronized map.
 		// It will show up in all log calls up and down the stack, until the request in middlewareWithInitPropagation exits.
-		ctx := Add(r.Context(), "id", id)
+		ctx := With(r.Context(), "id", id)
 
 		// slogctx.Prepend will add "foo" only to the Returned context, which will limits its scope
 		// to the rest of this function and any sub-functions called.
