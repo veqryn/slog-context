@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	propagation "github.com/veqryn/slog-context/propagation"
+	"github.com/veqryn/slog-context/propagate"
 )
 
 // AttrCollection is an http middleware that collects slog.Attr from
@@ -27,9 +27,9 @@ import (
 // slog.InfoContext).
 func AttrCollection(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Use the propagation initializer from the propagation package.
+		// Use the propagation initializer from the propagate package.
 		// It is a no-op if propagation was already initialized on the context.
-		r = r.WithContext(propagation.Init(r.Context()))
+		r = r.WithContext(propagate.Init(r.Context()))
 		next.ServeHTTP(w, r)
 	})
 }
@@ -41,7 +41,7 @@ func AttrCollection(next http.Handler) http.Handler {
 func With(ctx context.Context, args ...any) context.Context {
 	// Delegate to the propagation-aware add function. It will fall back to
 	// the attached-logger flow when propagation isn't initialized.
-	return propagation.Add(ctx, args...)
+	return propagate.Add(ctx, args...)
 }
 
 // ExtractAttrCollection is a slogctx Extractor that must be used with a
@@ -49,5 +49,5 @@ func With(ctx context.Context, args ...any) context.Context {
 // It will cause the Handler to add the Attributes added by sloghttp.With to all
 // log lines using that same context.
 func ExtractAttrCollection(ctx context.Context, t time.Time, lvl slog.Level, msg string) []slog.Attr {
-	return propagation.ExtractAttrs(ctx, t, lvl, msg)
+	return propagate.ExtractAttrs(ctx, t, lvl, msg)
 }

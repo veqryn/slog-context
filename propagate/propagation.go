@@ -1,4 +1,4 @@
-package propagation
+package propagate
 
 import (
 	"context"
