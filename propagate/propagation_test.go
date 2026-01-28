@@ -90,10 +90,9 @@ func TestOutsideRequestAttachedAttributes(t *testing.T) {
 			},
 		},
 	)
-	ctx := context.Background()
 	l := slog.New(h)
 
-	ctx = With(ctx, "id", "13579")
+	ctx := With(nil, "id", "13579")
 	ctx = With(ctx) // Should be ignored
 
 	// "id" will not be missing since with will initialize
