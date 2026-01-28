@@ -3,9 +3,9 @@ module github.com/veqryn/slog-context/examples
 go 1.21
 
 require (
-	github.com/veqryn/slog-context v0.8.0
-	github.com/veqryn/slog-context/grpc v0.8.0
-	github.com/veqryn/slog-context/otel v0.8.0
+	github.com/veqryn/slog-context v0.9.0
+	github.com/veqryn/slog-context/grpc v0.9.0
+	github.com/veqryn/slog-context/otel v0.9.0
 	go.opentelemetry.io/otel v1.29.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.29.0
 	go.opentelemetry.io/otel/sdk v1.29.0
@@ -14,7 +14,7 @@ require (
 )
 
 require (
-	github.com/go-logr/logr v1.4.2 // indirect
+	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
