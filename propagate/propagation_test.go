@@ -25,6 +25,7 @@ func TestAttrCollection(t *testing.T) {
 			},
 		},
 	)
+
 	// Using slog.SetDefault in tests can be problematic,
 	// as the steps run in parallel and step on each other
 	l := slog.New(h)
@@ -89,13 +90,12 @@ func TestOutsideRequestAttachedAttributes(t *testing.T) {
 			},
 		},
 	)
-	ctx := context.Background()
 	l := slog.New(h)
 
-	ctx = With(ctx, "id", "13579")
+	ctx := With(nil, "id", "13579")
 	ctx = With(ctx) // Should be ignored
 
-	// "id" will be missing since we didn't use InitPropagation()
+	// "id" will not be missing since with will initialize
 	l.InfoContext(ctx, "utility method")
 
 	jsn, err := tester.MarshalJSON()
@@ -103,7 +103,7 @@ func TestOutsideRequestAttachedAttributes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"utility method"}
+	expected := `{"time":"2023-09-29T13:00:59Z","level":"INFO","msg":"utility method","id":"13579"}
 `
 	if string(jsn) != expected {
 		t.Error("Incorrect logs received: ", string(jsn))

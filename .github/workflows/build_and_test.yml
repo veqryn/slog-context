@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.21', '1.22', '1.23', '1.24' ]
+        go-version: [ '1.21', '1.22', '1.23', '1.24', '1.25' ]
         go-module: [ '.', './otel', './examples', './grpc' ]
 
     defaults:
@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.21', '1.22', '1.23', '1.24' ]
+        go-version: [ '1.21', '1.22', '1.23', '1.24', '1.25' ]
 
     steps:
       - uses: actions/checkout@v4

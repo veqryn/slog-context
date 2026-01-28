@@ -29,8 +29,7 @@ func AttrCollection(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Use the propagation initializer from the propagate package.
 		// It is a no-op if propagation was already initialized on the context.
-		r = r.WithContext(propagate.Init(r.Context()))
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(propagate.Init(r.Context())))
 	})
 }
 
