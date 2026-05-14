@@ -1,6 +1,6 @@
 module github.com/veqryn/slog-context/examples
 
-go 1.21
+go 1.25
 
 require (
 	github.com/veqryn/slog-context v0.9.0
