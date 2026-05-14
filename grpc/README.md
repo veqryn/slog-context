@@ -1,6 +1,6 @@
 # slog-context
 [![tag](https://img.shields.io/github/tag/veqryn/slog-context.svg)](https://github.com/veqryn/slog-context/tags)
-![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.21-%23007d9c)
+![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.24-%23007d9c)
 [![GoDoc](https://godoc.org/github.com/veqryn/slog-context?status.svg)](https://pkg.go.dev/github.com/veqryn/slog-context/grpc)
 ![Build Status](https://github.com/veqryn/slog-context/actions/workflows/build_and_test.yml/badge.svg)
 [![Go report](https://goreportcard.com/badge/github.com/veqryn/slog-context/grpc)](https://goreportcard.com/report/github.com/veqryn/slog-context/grpc)

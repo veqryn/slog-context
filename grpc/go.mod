@@ -1,6 +1,6 @@
 module github.com/veqryn/slog-context/grpc
 
-go 1.21
+go 1.24
 
 require (
 	github.com/veqryn/slog-context v0.9.0
