@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.21', '1.22', '1.23', '1.24', '1.25' ]
+        go-version: [ '1.21', '1.22', '1.23', '1.24', '1.25', '1.26' ]
         go-module: [ '.', './otel', './examples', './grpc' ]
 
     defaults:
@@ -28,10 +28,10 @@ jobs:
         working-directory: ${{ matrix.go-module }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Go ${{ matrix.go-version }} ${{ matrix.go-module }}
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version }}
 
@@ -52,13 +52,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.21', '1.22', '1.23', '1.24', '1.25' ]
+        go-version: [ '1.21', '1.22', '1.23', '1.24', '1.25', '1.26' ]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Go ${{ matrix.go-version }}
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go-version }}
 
