@@ -12,6 +12,10 @@ import (
 	"go.opentelemetry.io/otel/trace/embedded"
 )
 
+func init() {
+	DefaultSpanAddEventMinLevel = slog.LevelWarn
+}
+
 func TestExtractTraceSpanID(t *testing.T) {
 	tester := &testHandler{}
 	h := slogctx.NewHandler(
@@ -75,6 +79,48 @@ func TestExtractTraceSpanID(t *testing.T) {
 	if *span.description != "main message" {
 		t.Errorf("Expected: %v; Got: %v", "main message", *span.description)
 	}
+	if (*span.err).Error() != "main message" {
+		t.Errorf("Expected: %v; Got: %v", "main message", (*span.err).Error())
+	}
+}
+
+func TestExtractTraceSpanIDAddEvent(t *testing.T) {
+	tester := &testHandler{}
+	h := slogctx.NewHandler(
+		tester,
+		&slogctx.HandlerOptions{
+			Prependers: []slogctx.AttrExtractor{
+				ExtractTraceSpanID,
+				slogctx.ExtractPrepended,
+			},
+		})
+	ctx := slogctx.NewCtx(context.Background(), slog.New(h))
+
+	// Manually create the trace id and span id so the test is repeatable
+	traceID, err := trace.TraceIDFromHex(`123456789abcdef0123456789abcdef0`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	spanID, err := trace.SpanIDFromHex(`123456789abcdef0`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Manually set the id's
+	span := &recorderSpan{
+		sc: trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID: traceID,
+			SpanID:  spanID,
+		}),
+	}
+
+	ctx = trace.ContextWithSpan(ctx, span)
+
+	slogctx.Warn(ctx, "some warn message")
+
+	if *span.event != "some warn message" {
+		t.Errorf("Expected: %v; Got: %v", "some warn message", *span.description)
+	}
 }
 
 // recorderSpan is an implementation of Span that performs no operations.
@@ -83,6 +129,8 @@ type recorderSpan struct {
 	sc          trace.SpanContext
 	status      *codes.Code
 	description *string
+	err         *error
+	event       *string
 }
 
 var _ trace.Span = &recorderSpan{}
@@ -108,11 +156,15 @@ func (*recorderSpan) SetAttributes(...attribute.KeyValue) {}
 // End does nothing.
 func (*recorderSpan) End(...trace.SpanEndOption) {}
 
-// RecordError does nothing.
-func (*recorderSpan) RecordError(error, ...trace.EventOption) {}
+// RecordError records the error
+func (r *recorderSpan) RecordError(err error, opts ...trace.EventOption) {
+	r.err = &err
+}
 
-// AddEvent does nothing.
-func (*recorderSpan) AddEvent(string, ...trace.EventOption) {}
+// AddEvent records the event
+func (r *recorderSpan) AddEvent(event string, opts ...trace.EventOption) {
+	r.event = &event
+}
 
 // SetName does nothing.
 func (*recorderSpan) SetName(string) {}
